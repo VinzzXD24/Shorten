@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shortlink Generator</title>
+  
+  <!-- Bootstrap & Font Awesome -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f9fafc;
+      color: #333;
+    }
+
+    .navbar {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+    }
+    .navbar-brand, .navbar-nav .nav-link {
+      color: white !important;
+      font-weight: 600;
+    }
+
+    .navbar-toggler:focus, .navbar-toggler:active {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .result-box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.1);
+      display: none;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .error-msg {
+      color: red;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .faq-section {
+      margin-top: 40px;
+      padding: 30px;
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .faq-section i {
+      font-size: 50px;
+      color: #007bff;
+      margin-bottom: 15px;
+    }
+
+    .faq-section h3 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .syarat-container {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    .syarat-container a {
+      text-decoration: none;
+      font-weight: 600;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="#"><i class="fa-solid fa-link"></i> Shortlink Generator</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="donasi.html">Donasi</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="saranDropdown" role="button" data-bs-toggle="dropdown">
+              Saran
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="mailto:davinndavin84@gmail.com"><i class="fa-solid fa-envelope"></i> Email</a></li>
+              <li><a class="dropdown-item" href="https://t.me/NetcyzenAI" target="_blank"><i class="fa-brands fa-telegram"></i> Telegram</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Header -->
+  <div class="header">
+    <h1><i class="fa-solid fa-link"></i> Shortlink Generator</h1>
+    <p>Buat link pendek yang lebih mudah dibagikan dan diingat.</p>
+  </div>
+
+  <!-- Formulir -->
+  <div class="container mt-4">
+    <div class="card p-4">
+      <h2 class="text-center"><i class="fa-solid fa-scissors"></i> Buat Shortlink</h2>
+      <form id="shortlinkForm">
+        <div class="mb-3">
+          <label for="url" class="form-label">URL Tujuan:</label>
+          <input type="url" id="url" name="url" class="form-control" placeholder="https://netcyzen.software" required>
+        </div>
+        <div class="mb-3">
+          <label for="alias" class="form-label">Alias (Opsional):</label>
+          <input type="text" id="alias" name="alias" class="form-control" placeholder="CustomAlias">
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-link"></i> Buat Shortlink</button>
+      </form>
+
+      <p class="error-msg" id="errorMsg">Gagal membuat shortlink, coba lagi.</p>
+
+      <!-- Hasil Shortlink -->
+      <div id="result" class="result-box mt-3 text-center">
+        <h4><i class="fa-solid fa-check-circle text-success"></i> Shortlink Berhasil Dibuat!</h4>
+        <a id="shortenedLink" href="#" target="_blank"></a>
+        <div class="mt-2">
+          <button class="btn btn-success btn-sm" id="copyBtn"><i class="fa-solid fa-copy"></i> Copy</button>
+          <a class="btn btn-info btn-sm" id="openLink" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Link</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Section -->
+  <div class="container">
+    <div class="faq-section mt-4">
+      <i class="fa-solid fa-question-circle"></i>
+      <h3>Apa Itu Shortlink?</h3>
+      <p>Shortlink adalah versi singkat dari URL panjang, memudahkan dalam berbagi dan mengingat.</p>
+
+      <i class="fa-solid fa-wrench"></i>
+      <h3>Bagaimana Cara Membuat Shortlink?</h3>
+      <p>Cukup masukkan URL tujuan dan klik "Buat Shortlink", sistem akan menghasilkan link pendek untuk Anda.</p>
+
+      <i class="fa-solid fa-bolt"></i>
+      <h3>Kenapa Shortlink Itu Ada?</h3>
+      <p>Shortlink mempermudah berbagi tautan, menghemat ruang, dan lebih estetis dalam penggunaan di media sosial.</p>
+    </div>
+  </div>
+
+  <!-- Syarat & Ketentuan -->
+  <div class="container syarat-container">
+    <p><i class="fa-solid fa-file-contract"></i> Dengan menggunakan layanan ini, Anda menyetujui <a href="https://policies.google.com/terms?hl=id" target="_blank">Syarat & Ketentuan</a>.</p>
+  </div>
+
+  <!-- Script -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text)
+        .then(() => alert('Link berhasil disalin!'))
+        .catch(err => console.error('Gagal menyalin:', err));
+    }
+
+    document.getElementById("shortlinkForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const urlInput = document.getElementById("url");
+      const aliasInput = document.getElementById("alias");
+      const resultBox = document.getElementById("result");
+      const errorMsg = document.getElementById("errorMsg");
+      const shortenedLink = document.getElementById("shortenedLink");
+      const openLink = document.getElementById("openLink");
+
+      resultBox.style.display = "none";
+      errorMsg.style.display = "none";
+
+      const apiUrl = `https://shortino.link/api?api=47d7bf2ae3fe75b5a9f5a6f0b8d74ac37ad7163b&url=${encodeURIComponent(urlInput.value)}${aliasInput.value ? `&alias=${encodeURIComponent(aliasInput.value)}` : ''}`;
+
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (data.status === "success") {
+          shortenedLink.href = data.shortenedUrl;
+          shortenedLink.textContent = data.shortenedUrl;
+          openLink.href = data.shortenedUrl;
+          
+          document.getElementById("copyBtn").onclick = () => copyToClipboard(data.shortenedUrl);
+          resultBox.style.display = "block";
+        } else {
+          errorMsg.textContent = data.message || 'Terjadi kesalahan pada server';
+          errorMsg.style.display = "block";
+        }
+      } catch (error) {
+        errorMsg.textContent = 'Koneksi internet bermasalah';
+        errorMsg.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>
