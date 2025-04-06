@@ -8,7 +8,7 @@
     body { font-family: Arial, sans-serif; padding: 20px; }
     h1 { text-align: center; }
     .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-    .nav button { padding: 8px 12px; border: none; background: #eee; cursor: pointer; }
+    .nav button { padding: 8px 12px; border: none; background: #eee; cursor: pointer; border-radius: 5px; }
     .nav button.active { background: #333; color: #fff; }
     .product-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
     .product { border: 1px solid #ccc; padding: 10px; border-radius: 10px; }
@@ -47,6 +47,10 @@
     let allProducts = [], activeCategory = '', activeProvider = '';
     let currentTx = null, polling = null;
 
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchProducts();
+    });
+
     async function fetchProducts() {
       try {
         const res = await fetch("https://forestapi.web.id/api/h2h/price-list/all", {
@@ -59,8 +63,9 @@
         renderCategories();
         renderProviders();
         renderProducts();
-      } catch {
+      } catch (e) {
         document.getElementById("productList").innerHTML = "Gagal memuat produk.";
+        console.error(e);
       }
     }
 
@@ -124,7 +129,8 @@
         const el = document.createElement("div");
         el.className = "product";
         el.innerHTML = `<strong>${p.name}</strong><br>${p.formatted_price}<br><small>${p.note || ''}</small><br><button>Beli Sekarang</button>`;
-        el.querySelector("button").onclick = () => startCheckout(p);
+        const btn = el.querySelector("button");
+        btn.onclick = () => startCheckout(p);
         list.appendChild(el);
       });
     }
@@ -180,8 +186,8 @@
     }
 
     async function checkStatus() {
-      // Simulasi pengecekan sukses pakai polling random (karena API tidak sediakan endpoint status)
-      if (Math.random() < 0.2) {
+      // simulasi polling (tanpa endpoint status asli)
+      if (Math.random() < 0.3) {
         clearInterval(polling);
         document.getElementById("statusText").textContent = "success";
         document.getElementById("notifBox").textContent = "Pembayaran berhasil!";
@@ -201,8 +207,6 @@
         document.getElementById("batalBtn").style.display = 'none';
       }
     }
-
-    fetchProducts();
   </script>
 </body>
 </html>
