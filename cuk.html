@@ -4,16 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VINZZ PPOB</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     :root {
       --primary: #2962ff;
     }
-    body { padding-bottom: 100px; }
-    .navbar { background: var(--primary); }
-    .category-btn.active, .subcategory-btn.active {
-      background-color: var(--primary)!important; color: white!important;
-    }
+    .navbar { background-color: var(--primary); }
+    .card:hover { transform: translateY(-4px); transition: 0.3s; }
+    .category-btn.active { background: var(--primary)!important; color: white!important; }
+    .product-img { height: 100px; object-fit: contain; }
     .loader {
       border: 4px solid #f3f3f3;
       border-top: 4px solid var(--primary);
@@ -26,8 +25,13 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    .toast-container {
-      position: fixed; bottom: 1rem; right: 1rem; z-index: 1055;
+    .qris-status.success {
+      color: green; font-weight: bold;
+      animation: pulse 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
     }
   </style>
 </head>
@@ -39,198 +43,214 @@
   </nav>
 
   <div class="container my-4">
-    <div id="category-tabs" class="mb-3 d-flex flex-wrap gap-2"></div>
-    <div id="subcategory-tabs" class="mb-4 d-flex flex-wrap gap-2"></div>
-    
+    <div id="category-tabs" class="d-flex flex-wrap gap-2 mb-3"></div>
+    <div id="provider-tabs" class="d-flex flex-wrap gap-2 mb-3"></div>
     <div id="loading" class="text-center d-none">
       <div class="loader"></div>
       <p class="mt-2">Memuat produk...</p>
     </div>
-
     <div class="row g-3" id="products-container"></div>
   </div>
 
   <!-- Modal QRIS -->
   <div class="modal fade" id="qrisModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content text-center">
-        <div class="modal-header">
-          <h5 class="modal-title">Bayar dengan QRIS</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p><strong>Total:</strong> <span id="qris-total">Rp0</span></p>
-          <img id="qris-img" src="" alt="QRIS" class="img-fluid mb-3" style="max-height: 250px;">
-          <div id="qris-status" class="fw-bold text-warning">Menunggu Pembayaran...</div>
-        </div>
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-3">
+        <h5 class="mb-2">Bayar dengan QRIS</h5>
+        <img id="qrisImage" src="" alt="QRIS" class="img-fluid rounded mb-2"/>
+        <div id="qrisStatus" class="text-warning mb-2">Menunggu pembayaran...</div>
+        <button class="btn btn-danger btn-sm" onclick="cancelDeposit()">Batalkan</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast Notification -->
-  <div class="toast-container">
-    <div id="toastSuccess" class="toast align-items-center text-white bg-success" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body">Pembayaran Berhasil!</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const API_KEY = 'sk-rj6hylkrbx3qio';
-    let productsData = [];
+    let allProducts = [], selectedCategory = 'all', selectedProvider = 'all';
+    let pollingInterval, currentDepositId, currentProduct;
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      await loadProducts();
-    });
+    document.addEventListener('DOMContentLoaded', () => loadProducts());
 
     async function loadProducts() {
-      toggleLoading(true);
+      showLoading(true);
       try {
         const res = await fetch('https://forestapi.web.id/api/h2h/price-list/all', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: API_KEY, filter_status: "true", profit_percent: "1" })
+          body: JSON.stringify({ api_key: API_KEY, profit_percent: "1", filter_status: "true" })
         });
-        const { data } = await res.json();
-        productsData = data;
+        const json = await res.json();
+        allProducts = json.data;
         renderCategories();
-      } catch (e) {
-        alert("Gagal memuat produk: " + e.message);
+        renderProviders();
+        renderProducts();
+      } catch (err) {
+        alert('Gagal memuat produk: ' + err.message);
       } finally {
-        toggleLoading(false);
+        showLoading(false);
       }
     }
 
     function renderCategories() {
-      const categories = [...new Set(productsData.map(p => p.category))];
+      const categories = ['all', ...new Set(allProducts.map(p => p.category))];
       const container = document.getElementById('category-tabs');
       container.innerHTML = '';
-      categories.forEach(category => {
+      categories.forEach(cat => {
         const btn = document.createElement('button');
-        btn.className = 'btn btn-outline-primary category-btn';
-        btn.innerText = category;
+        btn.className = `btn btn-outline-primary category-btn ${cat === 'all' ? 'active' : ''}`;
+        btn.textContent = cat;
         btn.onclick = () => {
+          selectedCategory = cat;
           document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          renderSubcategories(category);
+          renderProviders();
+          renderProducts();
         };
         container.appendChild(btn);
       });
-      container.firstChild?.click();
     }
 
-    function renderSubcategories(category) {
-      const subcats = [...new Set(productsData.filter(p => p.category === category).map(p => p.provider))];
-      const container = document.getElementById('subcategory-tabs');
+    function renderProviders() {
+      const providers = ['all', ...new Set(allProducts.filter(p => selectedCategory === 'all' || p.category === selectedCategory).map(p => p.provider))];
+      const container = document.getElementById('provider-tabs');
       container.innerHTML = '';
-      subcats.forEach(provider => {
+      providers.forEach(prov => {
         const btn = document.createElement('button');
-        btn.className = 'btn btn-outline-secondary subcategory-btn';
-        btn.innerText = provider;
+        btn.className = `btn btn-outline-secondary provider-btn ${prov === 'all' ? 'active' : ''}`;
+        btn.textContent = prov;
         btn.onclick = () => {
-          document.querySelectorAll('.subcategory-btn').forEach(b => b.classList.remove('active'));
+          selectedProvider = prov;
+          document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          renderProducts(category, provider);
+          renderProducts();
         };
         container.appendChild(btn);
       });
-      container.firstChild?.click();
     }
 
-    function renderProducts(category, provider) {
+    function renderProducts() {
       const container = document.getElementById('products-container');
-      container.innerHTML = '';
-      const filtered = productsData.filter(p => p.category === category && p.provider === provider);
-      filtered.forEach(product => {
-        const card = document.createElement('div');
-        card.className = 'col-md-4';
-        card.innerHTML = `
+      const filtered = allProducts.filter(p =>
+        (selectedCategory === 'all' || p.category === selectedCategory) &&
+        (selectedProvider === 'all' || p.provider === selectedProvider)
+      );
+      container.innerHTML = filtered.map(product => `
+        <div class="col-sm-6 col-md-4 col-lg-3">
           <div class="card h-100">
-            <div class="card-body">
-              <h6 class="card-title">${product.name}</h6>
-              <div class="text-muted small">${product.provider}</div>
-              <div class="text-success fw-bold">${product.formatted_price}</div>
-              ${product.note ? `<div class="text-info small mt-1">${product.note}</div>` : ''}
-              <button class="btn btn-primary mt-3 w-100" onclick='buyNow(${JSON.stringify(product)})'>Beli Sekarang</button>
+            <div class="card-body d-flex flex-column">
+              <h6>${product.name}</h6>
+              <small class="text-muted">${product.provider}</small>
+              <div class="fw-bold text-success mt-auto mb-2">${product.formatted_price}</div>
+              ${product.note ? `<div class="text-info small">${product.note}</div>` : ''}
+              ${product.provider.includes('MOBILE LEGENDS') ? `
+                <div class="input-group input-group-sm mb-2">
+                  <input type="text" class="form-control" placeholder="User ID" id="uid-${product.code}">
+                  <input type="text" class="form-control" placeholder="Zone ID" id="zid-${product.code}">
+                </div>` : `
+                <input type="text" class="form-control form-control-sm mb-2" placeholder="Nomor/User ID" id="target-${product.code}">`}
+              <button class="btn btn-primary btn-sm w-100" onclick="buyProduct('${product.code}')">Beli Sekarang</button>
             </div>
           </div>
-        `;
-        container.appendChild(card);
-      });
+        </div>`).join('');
     }
 
-    async function buyNow(product) {
-      let target = '';
-      if (product.provider.toLowerCase().includes("mobile legends")) {
-        const id = prompt("Masukkan User ID:");
-        const zone = prompt("Masukkan Zone ID:");
-        if (!id || !zone) return alert("ID tidak lengkap");
-        target = `${id}|${zone}`;
+    async function buyProduct(code) {
+      const product = allProducts.find(p => p.code === code);
+      if (!product) return alert('Produk tidak ditemukan.');
+
+      let target;
+      if (product.provider.includes('MOBILE LEGENDS')) {
+        const uid = document.getElementById(`uid-${code}`).value;
+        const zid = document.getElementById(`zid-${code}`).value;
+        if (!uid || !zid) return alert('Masukkan User ID dan Zone ID.');
+        target = `${uid}|${zid}`;
       } else {
-        target = prompt("Masukkan Nomor Tujuan / User ID:");
-        if (!target) return;
+        target = document.getElementById(`target-${code}`).value;
+        if (!target) return alert('Masukkan tujuan.');
       }
 
-      const reff = "trx-" + Date.now();
       const nominal = product.price;
+      const reffId = 'topup-' + Date.now();
 
       try {
-        const depositRes = await fetch('https://forestapi.web.id/api/h2h/deposit/create', {
+        const res = await fetch('https://forestapi.web.id/api/h2h/deposit/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             api_key: API_KEY,
-            nominal, method: "QRISFAST", reff_id: reff
+            method: 'QRISFAST',
+            nominal,
+            reff_id: reffId,
+            fee_by_customer: false
           })
         });
-        const { data } = await depositRes.json();
-        showQRIS(data.qr_image_url, product, target, data.id, nominal);
+        const json = await res.json();
+        if (json.status !== 'success') throw new Error(json.message);
+
+        currentDepositId = json.data.id;
+        currentProduct = { product_code: product.code, target, reff_id: reffId };
+        document.getElementById('qrisImage').src = json.data.qr_image_url;
+        document.getElementById('qrisStatus').textContent = 'Menunggu pembayaran...';
+        document.getElementById('qrisStatus').classList.remove('success');
+        new bootstrap.Modal('#qrisModal').show();
+        pollingInterval = setInterval(checkDepositStatus, 5000);
       } catch (err) {
-        alert("Gagal membuat deposit: " + err.message);
+        alert('Gagal membuat QRIS: ' + err.message);
       }
     }
 
-    function showQRIS(qrUrl, product, target, depositId, nominal) {
-      document.getElementById('qris-img').src = qrUrl;
-      document.getElementById('qris-total').innerText = `Rp ${nominal.toLocaleString()}`;
-      document.getElementById('qris-status').innerText = "Menunggu Pembayaran...";
-      new bootstrap.Modal('#qrisModal').show();
-
-      const interval = setInterval(async () => {
+    async function checkDepositStatus() {
+      try {
         const res = await fetch('https://forestapi.web.id/api/h2h/deposit/cancel', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: API_KEY, id: depositId })
+          body: JSON.stringify({ api_key: API_KEY, id: currentDepositId })
         });
-        const result = await res.json();
-        if (result.data.status === 'success') {
-          clearInterval(interval);
-          document.getElementById('qris-status').innerText = "Pembayaran Berhasil!";
-          document.getElementById('qris-status').classList.replace("text-warning", "text-success");
-
-          const trans = await fetch('https://forestapi.web.id/api/h2h/transaction/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              api_key: API_KEY,
-              target, product_code: product.code, reff_id: 'vinzz-' + Date.now()
-            })
-          });
-          const txRes = await trans.json();
-          if (txRes.status === 'success') showSuccessToast();
+        const json = await res.json();
+        if (json.data.status === 'success') {
+          clearInterval(pollingInterval);
+          document.getElementById('qrisStatus').textContent = 'Pembayaran berhasil!';
+          document.getElementById('qrisStatus').classList.add('success');
+          await processTransaction();
+          setTimeout(() => bootstrap.Modal.getInstance(document.getElementById('qrisModal')).hide(), 3000);
         }
-      }, 3000);
+      } catch (e) {}
     }
 
-    function showSuccessToast() {
-      const toast = new bootstrap.Toast(document.getElementById('toastSuccess'));
-      toast.show();
+    async function processTransaction() {
+      try {
+        const res = await fetch('https://forestapi.web.id/api/h2h/transaction/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: API_KEY, ...currentProduct })
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+          alert(`Transaksi sukses!\nSN: ${json.data.serial_number}`);
+        } else {
+          alert('Gagal proses transaksi.');
+        }
+      } catch (e) {
+        alert('Error proses transaksi.');
+      }
     }
 
-    function toggleLoading(show) {
+    async function cancelDeposit() {
+      try {
+        clearInterval(pollingInterval);
+        await fetch('https://forestapi.web.id/api/h2h/deposit/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: API_KEY, id: currentDepositId })
+        });
+        bootstrap.Modal.getInstance(document.getElementById('qrisModal')).hide();
+        alert('Pesanan dibatalkan.');
+      } catch (e) {
+        alert('Gagal membatalkan.');
+      }
+    }
+
+    function showLoading(show) {
       document.getElementById('loading').classList.toggle('d-none', !show);
       document.getElementById('products-container').classList.toggle('d-none', show);
     }
