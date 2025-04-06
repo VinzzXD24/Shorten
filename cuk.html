@@ -2,181 +2,286 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VINZZ PPOB</title>
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
+    :root {
+      --bg: #fff;
+      --text: #111;
+      --primary: #007bff;
+      --card: #f9f9f9;
+      --shadow: rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] {
+      --bg: #121212;
+      --text: #eee;
+      --primary: #0d6efd;
+      --card: #1e1e1e;
+      --shadow: rgba(255,255,255,0.05);
+    }
+    * { box-sizing: border-box; }
     body {
+      margin: 0; padding: 0;
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      background: #f9f9f9;
-      color: #333;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
     }
     header {
+      background: var(--primary);
+      color: #fff;
       padding: 1rem;
-      background: #007bff;
-      color: white;
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-    .category-section {
-      padding: 1rem;
-    }
-    .category-title {
-      font-size: 1.2rem;
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-    }
-    .subcategory-list {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
-    .subcategory-item {
-      background: #007bff;
+    header h1 { margin: 0; font-size: 1.5rem; }
+    .toggle-switch { display: flex; align-items: center; }
+    .toggle-switch input[type=checkbox] { display: none; }
+    .toggle-switch label {
+      position: relative;
+      width: 50px; height: 24px;
+      background: #ccc;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .toggle-switch label::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 2px; left: 2px;
+      transition: 0.3s;
+    }
+    .toggle-switch input:checked + label { background: var(--card); }
+    .toggle-switch input:checked + label::after { transform: translateX(26px); }
+    .container { padding: 1rem; max-width: 960px; margin: auto; }
+    .category-header {
+      display: flex; align-items: center;
+      gap: 0.5rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin: 1rem 0 0.5rem;
+    }
+    .category-nav, .subcategory-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .category-nav button, .subcategory-nav button {
+      background: var(--primary);
       color: white;
-      padding: 0.4rem 1rem;
+      border: none;
+      padding: 0.5rem 1rem;
       border-radius: 20px;
       cursor: pointer;
-      font-size: 0.9rem;
+      display: flex; align-items: center; gap: 0.3rem;
     }
-    .subcategory-item:hover {
-      background: #0056b3;
-    }
-    .product-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
+    .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; padding-bottom: 2rem; }
     .product-card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      background: var(--card);
       padding: 1rem;
-      flex: 1 0 200px;
-      max-width: 240px;
-      position: relative;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px var(--shadow);
+      display: flex; flex-direction: column;
     }
-    .product-card h3 {
-      margin: 0 0 0.5rem;
-      font-size: 1rem;
-    }
-    .product-card .info {
-      font-size: 0.9rem;
-      margin-bottom: 0.4rem;
-    }
-    .product-card .note {
-      font-size: 0.8rem;
-      color: #dc3545;
-    }
-    .buy-button {
+    .product-card h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .product-card .info { font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .product-card input { margin-bottom: 0.5rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
+    .product-card button {
+      margin-top: auto;
       background: #28a745;
       color: white;
-      padding: 0.5rem 1rem;
       border: none;
+      padding: 0.6rem;
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
     }
-    .buy-button:hover {
-      background: #218838;
+    .popup-overlay {
+      position: fixed; top:0; left:0; width:100vw; height:100vh;
+      background: rgba(0,0,0,0.6);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+    }
+    .popup {
+      background: var(--card);
+      padding: 2rem; border-radius: 12px;
+      max-width: 90%; width: 380px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 4px 12px var(--shadow);
+      animation: slideDown 0.4s ease-out;
+    }
+    @keyframes slideDown { from { opacity:0; transform: translateY(-20px);} to { opacity:1; transform: translateY(0);} }
+    .popup .close-btn { position: absolute; top: 8px; right: 12px; background: transparent; border:none; font-size:1.2rem; cursor: pointer; }
+    .popup img { width: 300px; max-width:100%; margin: 1rem 0; }
+    .popup h3 { margin-bottom: 0.5rem; }
+    .popup .detail { text-align:left; margin-bottom:1rem; }
+    .popup .status { font-weight:bold; color:orange; margin-bottom:1rem; }
+    .popup .status.success { color:green; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%{transform:scale(1);}50%{transform:scale(1.05);}100%{transform:scale(1);} }
+    .popup .cancel-btn, .popup .close-btn2 {
+      margin:0.3rem; padding:0.5rem 1rem; border:none; border-radius:6px; cursor:pointer;
+    }
+    .popup .cancel-btn { background:#dc3545; color:white; }
+    .popup .close-btn2 { background:#6c757d; color:white; }
+    #scrollTopBtn {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--primary); color:white;
+      border:none; padding:0.8rem; border-radius:50%; font-size:1.2rem;
+      cursor:pointer; display:none; z-index:1000;
     }
   </style>
 </head>
-<body>
-  <header>VINZZ PPOB</header>
-  <div class="category-section" id="product-container"></div>
+<body data-theme="light">
+  <header>
+    <h1>VINZZ PPOB</h1>
+    <div class="toggle-switch">
+      <input type="checkbox" id="themeToggle">
+      <label for="themeToggle"></label>
+    </div>
+  </header>
+  <div class="container">
+    <div class="category-header"><i class="fas fa-layer-group"></i> Jenis Layanan</div>
+    <div class="category-nav" id="categoryNav"></div>
+
+    <div class="category-header" id="subLabel"><i class="fas fa-list"></i> Pilih Provider</div>
+    <div class="subcategory-nav" id="subcategoryNav"></div>
+
+    <div class="products" id="productList"></div>
+  </div>
+
+  <div class="popup-overlay" id="popupOverlay">
+    <div class="popup">
+      <button class="close-btn" onclick="closePopup()">×</button>
+      <h3>Scan QRIS untuk Bayar</h3>
+      <img id="qrImage" src="" alt="QRIS" />
+      <div class="detail" id="paymentDetail"></div>
+      <div class="status" id="paymentStatus">Menunggu pembayaran...</div>
+      <button class="cancel-btn" onclick="cancelDeposit()">Batalkan Pesanan</button>
+      <button class="close-btn2" onclick="closePopup()">Tutup</button>
+    </div>
+  </div>
+
+  <button id="scrollTopBtn" onclick="scrollToTop()">↑</button>
 
   <script>
-    const API_KEY = "API_KEY_ANDA";
-    const API_URL = "https://api.forestapi.my.id";
+    const API_KEY = 'sk-rj6hylkrbx3qio';
+    let allProducts = [], currentDepositId = '', pollingInterval, feePercent = 1.8; // Fee admin tetap 1.8%
+
+    document.getElementById('themeToggle').addEventListener('change', e => {
+      document.body.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+    });
+    window.addEventListener('scroll', () => {
+      document.getElementById('scrollTopBtn').style.display = window.scrollY > 200 ? 'block' : 'none';
+    });
 
     async function fetchProducts() {
-      const res = await fetch(`${API_URL}/v1/produk?api_key=${API_KEY}`);
-      const data = await res.json();
-      return data.data;
-    }
-
-    function formatCurrency(amount) {
-      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
-    }
-
-    function calculateAdminFee(basePrice) {
-      return Math.ceil(basePrice * 0.018); // 1.8% admin fee
-    }
-
-    function groupBy(array, key) {
-      return array.reduce((result, item) => {
-        (result[item[key]] = result[item[key]] || []).push(item);
-        return result;
-      }, {});
-    }
-
-    function renderProducts(products) {
-      const container = document.getElementById('product-container');
-      container.innerHTML = '';
-
-      const categories = groupBy(products, 'kategori');
-      for (const [category, items] of Object.entries(categories)) {
-        const subcategories = groupBy(items, 'provider');
-        const section = document.createElement('section');
-        section.innerHTML = `
-          <div class="category-title"><i class="fas fa-tags"></i> ${category}</div>
-          <div class="subcategory-list">
-            ${Object.keys(subcategories).map(sub => `
-              <div class="subcategory-item" onclick="scrollToSubcategory('${category}-${sub}')">
-                <i class="fas fa-gamepad"></i> ${sub}
-              </div>
-            `).join('')}
-          </div>
-        `;
-
-        for (const [subcat, products] of Object.entries(subcategories)) {
-          const subId = `${category}-${subcat}`;
-          const subHeader = document.createElement('div');
-          subHeader.id = subId;
-          subHeader.innerHTML = `<h3>${subcat}</h3>`;
-          section.appendChild(subHeader);
-
-          const productList = document.createElement('div');
-          productList.className = 'product-list';
-
-          products.forEach(p => {
-            const basePrice = parseInt(p.price);
-            const adminFee = calculateAdminFee(basePrice);
-            const totalPrice = basePrice + adminFee;
-
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.innerHTML = `
-              <h3>${p.nama}</h3>
-              <div class="info">Harga: ${formatCurrency(basePrice)}</div>
-              <div class="info">Biaya Admin: ${formatCurrency(adminFee)}</div>
-              <div class="info">Total: ${formatCurrency(totalPrice)}</div>
-              <div class="note">*Harga belum termasuk total biaya sampai QRIS muncul</div>
-              <button class="buy-button">Beli Sekarang</button>
-            `;
-            productList.appendChild(card);
-          });
-
-          section.appendChild(productList);
-        }
-
-        container.appendChild(section);
+      try {
+        const res = await fetch('https://forestapi.web.id/api/h2h/price-list/all', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ api_key:API_KEY, profit_percent:'1', filter_status:false })
+        });
+        const json = await res.json();
+        allProducts = json.data;
+        renderCategories();
+      } catch {
+        alert('Gagal memuat produk');
       }
     }
 
-    function scrollToSubcategory(id) {
-      const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    function renderCategories() {
+      const cats = [...new Set(allProducts.map(p=>p.category))];
+      const nav = document.getElementById('categoryNav'); nav.innerHTML = '';
+      cats.forEach(cat => {
+        const btn = document.createElement('button'); btn.innerHTML = `<i class="fas fa-layer-group"></i> ${cat}`;
+        btn.onclick = () => renderSubcategories(cat);
+        nav.appendChild(btn);
+      });
     }
 
-    (async () => {
-      const products = await fetchProducts();
-      renderProducts(products);
-    })();
+    function renderSubcategories(cat) {
+      const subs = [...new Set(allProducts.filter(p=>p.category===cat).map(p=>p.provider))];
+      document.getElementById('subLabel').innerHTML = `<i class="fas fa-list"></i> ${cat==='Games'?'Pilih Game':'Pilih Provider'}`;
+      const nav = document.getElementById('subcategoryNav'); nav.innerHTML = '';
+      subs.forEach(sub => {
+        const btn = document.createElement('button'); btn.innerHTML = `<i class="fas fa-caret-right"></i> ${sub}`;
+        btn.onclick = () => renderProducts(cat, sub);
+        nav.appendChild(btn);
+      });
+      document.getElementById('productList').innerHTML = '';
+    }
+
+    function renderProducts(cat, sub) {
+      const list = document.getElementById('productList'); list.innerHTML = '';
+      allProducts.filter(p=>p.category===cat&&p.provider===sub).forEach(p=>{
+        const card = document.createElement('div'); card.className='product-card';
+        const isGame = cat==='Games';
+        card.innerHTML = `
+          <h3>${p.name}</h3>
+          <div class="info">Harga: ${p.formatted_price}</div>
+          <div class="info">Tipe: ${p.type}</div>
+          ${p.note?`<div class="info">Note: ${p.note}</div>`:''}
+          <input type="text" placeholder="${isGame?'User ID':'Nomor Tujuan'}" id="uid-${p.code}" />
+          ${p.note&&p.note.includes('GABUNGKAN')?`<input type="text" placeholder="Zone ID" id="zone-${p.code}" />`:''}
+          <button onclick="buyNow('${p.code}',${p.price})">Beli Sekarang</button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    async function buyNow(code, price) {
+      const uid = document.getElementById(`uid-${code}`).value.trim();
+      const zoneEl = document.getElementById(`zone-${code}`);
+      const zone = zoneEl?zoneEl.value.trim():'';
+      if(!uid||(zoneEl&&!zone)) return alert('Isi field dengan benar');
+      const target = zone?`${uid}|${zone}`:uid;
+      const reff = 'trx'+Date.now();
+      const fee = Math.ceil(price * feePercent/100);
+      const total = price + fee;
+      try {
+        const res = await fetch('https://forestapi.web.id/api/h2h/deposit/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:API_KEY,method:'QRISFAST',nominal:total,reff_id:reff,fee_by_customer:false})});
+        const json=await res.json(); if(json.status!=='success') throw new Error();
+        currentDepositId=json.data.id;
+        showPopup(json.data.qr_image_url,price,fee,total);
+        if(pollingInterval) clearInterval(pollingInterval);
+        pollingInterval=setInterval(()=>checkStatus(code,target,reff),3000);
+      } catch{alert('Gagal membuat QRIS');}
+    }
+
+    function showPopup(qrUrl, price, fee, total) {
+      document.getElementById('qrImage').src = qrUrl;
+      document.getElementById('paymentDetail').innerHTML =
+        `Harga Produk: Rp${price.toLocaleString()}<br>
+        Fee Admin (1,4%): Rp${fee.toLocaleString()}<br>
+        <strong>Total Bayar: Rp${total.toLocaleString()}</strong>`;
+      const statusEl = document.getElementById('paymentStatus');
+      statusEl.className = 'status-pending';
+      statusEl.innerText = 'Menunggu pembayaran...';
+      document.getElementById('popupOverlay').style.display = 'flex';
+    }
+
+    async function checkStatus(code,target,reff){
+      const res=await fetch('https://forestapi.web.id/api/h2h/deposit/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:currentDepositId,api_key:API_KEY})});
+      const json=await res.json();
+      if(json.data.status==='success'){
+        clearInterval(pollingInterval);
+        const statusEl = document.getElementById('paymentStatus'); statusEl.className='status-success'; statusEl.innerText='Pembayaran berhasil!';
+        setTimeout(async()=>{await fetch('https://forestapi.web.id/api/h2h/transaction/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:API_KEY,product_code:code,target,reff_id:reff})});closePopup();},2000);
+      }
+    }
+
+    async function cancelDeposit(){
+      if(!currentDepositId) return; await fetch('https://forestapi.web.id/api/h2h/deposit/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:currentDepositId,api_key:API_KEY})});
+      clearInterval(pollingInterval);closePopup();
+    }
+
+    function closePopup(){document.getElementById('popupOverlay').style.display='none';currentDepositId='';}
+    function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}    
+    fetchProducts();
   </script>
 </body>
 </html>
