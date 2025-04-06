@@ -3,210 +3,278 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Katalog Produk ForestAPI</title>
+  <title>Katalog Produk Digital</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { text-align: center; }
-    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-    .nav button { padding: 8px 12px; border: none; background: #eee; cursor: pointer; border-radius: 5px; }
-    .nav button.active { background: #333; color: #fff; }
-    .product-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-    .product { border: 1px solid #ccc; padding: 10px; border-radius: 10px; }
-    .product button { margin-top: 10px; }
-    #checkout { margin-top: 30px; padding: 20px; border: 1px solid #aaa; border-radius: 10px; display: none; }
-    .notif { padding: 10px; background: lightgreen; border-radius: 5px; margin-top: 10px; display: none; }
-    .animate-success { animation: pop 0.6s ease-in-out; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f2f2f2;
+      color: #333;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    header button {
+      background: white;
+      color: #4CAF50;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .container {
+      padding: 20px;
+    }
+    .product-group {
+      margin-bottom: 30px;
+    }
+    .product {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .product button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .qris-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      display: none;
+    }
+    .qris-box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 300px;
+    }
+    .status-pending {
+      color: orange;
+      font-weight: bold;
+    }
+    .status-success {
+      color: green;
+      font-weight: bold;
+      animation: pop 0.3s ease-in-out;
+    }
     @keyframes pop {
-      0% { transform: scale(0.8); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    input {
+      padding: 5px;
+      margin-top: 8px;
+      width: 100%;
+      box-sizing: border-box;
     }
   </style>
 </head>
 <body>
-  <h1>Katalog Produk Digital</h1>
-  <div class="nav" id="categoryNav"></div>
-  <div class="nav" id="providerNav"></div>
-  <div class="product-list" id="productList">Memuat produk...</div>
 
-  <div id="checkout">
-    <h3>Checkout Produk</h3>
-    <p id="checkoutProduct"></p>
-    <div id="extraInput" style="display: none;">
-      <input type="text" id="userId" placeholder="User ID" />
-      <input type="text" id="zoneId" placeholder="Zone ID" />
-    </div>
-    <input type="text" id="target" placeholder="Masukkan Nomor Tujuan / User ID" />
-    <button id="bayarBtn">Bayar Sekarang</button>
-    <div id="qrArea" style="margin-top: 15px;"></div>
-    <button id="batalBtn" style="display:none; margin-top:10px;">Batalkan Pesanan</button>
-    <div class="notif" id="notifBox"></div>
+<header id="categoryTabs"></header>
+
+<div class="container" id="productContainer">Memuat produk...</div>
+
+<div class="qris-modal" id="qrisModal">
+  <div class="qris-box">
+    <h3>Scan QRIS</h3>
+    <img id="qrImage" src="" alt="QRIS" width="200"/>
+    <p id="statusText" class="status-pending">Menunggu pembayaran...</p>
+    <button onclick="cancelDeposit()">Batalkan</button>
   </div>
+</div>
 
-  <script>
-    const API_KEY = "sk-rj6hylkrbx3qio";
-    let allProducts = [], activeCategory = '', activeProvider = '';
-    let currentTx = null, polling = null;
+<script>
+const API_KEY = "sk-rj6hylkrbx3qio";
+const API_BASE = "https://forestapi.web.id/api/h2h";
+let currentDepositId = null;
+let pollingInterval = null;
+let selectedProduct = null;
 
-    document.addEventListener("DOMContentLoaded", () => {
-      fetchProducts();
+async function fetchProducts() {
+  try {
+    const res = await fetch(`${API_BASE}/price-list/all`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ api_key: API_KEY, filter_status: true, profit_percent: "1" })
+    });
+    const data = await res.json();
+    return data.data;
+  } catch (err) {
+    document.getElementById("productContainer").innerText = "Gagal memuat produk.";
+    return [];
+  }
+}
+
+function groupByCategoryAndProvider(products) {
+  const grouped = {};
+  for (const p of products) {
+    if (!grouped[p.category]) grouped[p.category] = {};
+    if (!grouped[p.category][p.provider]) grouped[p.category][p.provider] = [];
+    grouped[p.category][p.provider].push(p);
+  }
+  return grouped;
+}
+
+function renderCategoryTabs(categories) {
+  const header = document.getElementById("categoryTabs");
+  header.innerHTML = "";
+  for (const cat of categories) {
+    const btn = document.createElement("button");
+    btn.innerText = cat;
+    btn.onclick = () => showCategory(cat);
+    header.appendChild(btn);
+  }
+}
+
+function showCategory(catName) {
+  const grouped = window.groupedProducts;
+  const container = document.getElementById("productContainer");
+  container.innerHTML = "";
+
+  for (const provider in grouped[catName]) {
+    const groupEl = document.createElement("div");
+    groupEl.className = "product-group";
+    groupEl.innerHTML = `<h3>${provider}</h3>`;
+
+    grouped[catName][provider].forEach(prod => {
+      const el = document.createElement("div");
+      el.className = "product";
+
+      let inputHtml = '';
+      if (prod.name.includes("Mobile Legends")) {
+        inputHtml = `
+          <input placeholder="User ID" id="uid-${prod.code}" />
+          <input placeholder="Zone ID" id="zone-${prod.code}" />
+        `;
+      } else {
+        inputHtml = `<input placeholder="Nomor Tujuan / ID" id="uid-${prod.code}" />`;
+      }
+
+      el.innerHTML = `
+        <strong>${prod.name}</strong><br>
+        <small>${prod.formatted_price}</small><br>
+        ${inputHtml}
+        <button onclick='buyProduct(${JSON.stringify(prod)})'>Beli Sekarang</button>
+      `;
+      groupEl.appendChild(el);
     });
 
-    async function fetchProducts() {
-      try {
-        const res = await fetch("https://forestapi.web.id/api/h2h/price-list/all", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ api_key: API_KEY, filter_status: true })
-        });
-        const data = await res.json();
-        allProducts = data.data;
-        renderCategories();
-        renderProviders();
-        renderProducts();
-      } catch (e) {
-        document.getElementById("productList").innerHTML = "Gagal memuat produk.";
-        console.error(e);
-      }
-    }
+    container.appendChild(groupEl);
+  }
+}
 
-    function renderCategories() {
-      const cats = [...new Set(allProducts.map(p => p.category))];
-      const nav = document.getElementById("categoryNav");
-      nav.innerHTML = '';
-      cats.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.textContent = cat;
-        btn.onclick = () => {
-          activeCategory = cat;
-          activeProvider = '';
-          renderProviders();
-          renderProducts();
-          updateActiveBtns();
-        };
-        nav.appendChild(btn);
-      });
-    }
+async function buyProduct(prod) {
+  selectedProduct = prod;
+  let target = "";
+  if (prod.name.includes("Mobile Legends")) {
+    const uid = document.getElementById(`uid-${prod.code}`).value.trim();
+    const zid = document.getElementById(`zone-${prod.code}`).value.trim();
+    if (!uid || !zid) return alert("Lengkapi User ID dan Zone ID");
+    target = `${uid}|${zid}`;
+  } else {
+    const val = document.getElementById(`uid-${prod.code}`).value.trim();
+    if (!val) return alert("Isi nomor tujuan terlebih dahulu");
+    target = val;
+  }
 
-    function renderProviders() {
-      const prov = [...new Set(allProducts
-        .filter(p => !activeCategory || p.category === activeCategory)
-        .map(p => p.provider))];
-      const nav = document.getElementById("providerNav");
-      nav.innerHTML = '';
-      prov.forEach(pv => {
-        const btn = document.createElement("button");
-        btn.textContent = pv;
-        btn.onclick = () => {
-          activeProvider = pv;
-          renderProducts();
-          updateActiveBtns();
-        };
-        nav.appendChild(btn);
-      });
-    }
+  const deposit = await fetch(`${API_BASE}/deposit/create`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      api_key: API_KEY,
+      method: "QRISFAST",
+      nominal: prod.price,
+      reff_id: "qris-" + Date.now(),
+      fee_by_customer: "false"
+    })
+  }).then(r => r.json());
 
-    function updateActiveBtns() {
-      document.querySelectorAll("#categoryNav button").forEach(btn => {
-        btn.classList.toggle("active", btn.textContent === activeCategory);
-      });
-      document.querySelectorAll("#providerNav button").forEach(btn => {
-        btn.classList.toggle("active", btn.textContent === activeProvider);
-      });
-    }
+  if (deposit.status !== "success") return alert("Gagal membuat QRIS");
 
-    function renderProducts() {
-      const list = document.getElementById("productList");
-      const filtered = allProducts.filter(p =>
-        (!activeCategory || p.category === activeCategory) &&
-        (!activeProvider || p.provider === activeProvider)
-      );
-      if (filtered.length === 0) {
-        list.innerHTML = "Tidak ada produk.";
-        return;
-      }
-      list.innerHTML = '';
-      filtered.forEach(p => {
-        const el = document.createElement("div");
-        el.className = "product";
-        el.innerHTML = `<strong>${p.name}</strong><br>${p.formatted_price}<br><small>${p.note || ''}</small><br><button>Beli Sekarang</button>`;
-        const btn = el.querySelector("button");
-        btn.onclick = () => startCheckout(p);
-        list.appendChild(el);
-      });
-    }
+  currentDepositId = deposit.data.id;
+  document.getElementById("qrImage").src = deposit.data.qr_image_url;
+  document.getElementById("statusText").className = "status-pending";
+  document.getElementById("statusText").innerText = "Menunggu pembayaran...";
+  document.getElementById("qrisModal").style.display = "flex";
 
-    function startCheckout(product) {
-      document.getElementById("checkout").style.display = 'block';
-      document.getElementById("checkoutProduct").textContent = product.name;
-      document.getElementById("qrArea").innerHTML = '';
-      document.getElementById("target").value = '';
-      document.getElementById("batalBtn").style.display = 'none';
-      document.getElementById("notifBox").style.display = 'none';
-      document.getElementById("extraInput").style.display = product.code.startsWith("ML") ? 'block' : 'none';
-      document.getElementById("bayarBtn").onclick = () => makeTransaction(product);
-    }
+  pollingInterval = setInterval(checkStatus, 3000);
+}
 
-    async function makeTransaction(product) {
-      let target = document.getElementById("target").value;
-      if (product.code.startsWith("ML")) {
-        const uid = document.getElementById("userId").value;
-        const zid = document.getElementById("zoneId").value;
-        if (!uid || !zid) return alert("Isi User ID dan Zone ID.");
-        target = `${uid}|${zid}`;
-      }
-      const reff = `tx-${Date.now()}`;
-      const depositRes = await fetch("https://forestapi.web.id/api/h2h/deposit/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nominal: product.price,
-          method: "QRISFAST",
-          reff_id: reff,
-          api_key: API_KEY
-        })
-      });
-      const deposit = await depositRes.json();
-      if (deposit.status !== "success") return alert("Gagal membuat QRIS.");
+async function checkStatus() {
+  const res = await fetch(`${API_BASE}/deposit/methods`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: API_KEY })
+  }).then(r => r.json());
 
-      document.getElementById("qrArea").innerHTML = `<img src="${deposit.data.qr_image_url}" width="200"/><p>Status: <span id="statusText">pending</span></p>`;
-      document.getElementById("batalBtn").style.display = 'inline-block';
-      currentTx = { id: deposit.data.id, reff_id: reff, product, target };
-      polling = setInterval(() => checkStatus(), 3000);
+  const statusCheck = await fetch(`${API_BASE}/deposit/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: API_KEY, id: currentDepositId })
+  }).then(r => r.json());
 
-      document.getElementById("batalBtn").onclick = async () => {
-        clearInterval(polling);
-        await fetch("https://forestapi.web.id/api/h2h/deposit/cancel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: currentTx.id, api_key: API_KEY })
-        });
-        document.getElementById("statusText").textContent = "dibatalkan";
-        document.getElementById("batalBtn").style.display = 'none';
-      };
-    }
+  if (statusCheck.data.status === "success") {
+    clearInterval(pollingInterval);
+    document.getElementById("statusText").className = "status-success";
+    document.getElementById("statusText").innerText = "Pembayaran berhasil!";
 
-    async function checkStatus() {
-      // simulasi polling (tanpa endpoint status asli)
-      if (Math.random() < 0.3) {
-        clearInterval(polling);
-        document.getElementById("statusText").textContent = "success";
-        document.getElementById("notifBox").textContent = "Pembayaran berhasil!";
-        document.getElementById("notifBox").classList.add("animate-success");
-        document.getElementById("notifBox").style.display = "block";
+    // Lanjut transaksi
+    await fetch(`${API_BASE}/transaction/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: API_KEY,
+        product_code: selectedProduct.code,
+        target: selectedProduct.name.includes("Mobile Legends")
+          ? `${document.getElementById(`uid-${selectedProduct.code}`).value}|${document.getElementById(`zone-${selectedProduct.code}`).value}`
+          : document.getElementById(`uid-${selectedProduct.code}`).value,
+        reff_id: "trx-" + Date.now()
+      })
+    });
 
-        await fetch("https://forestapi.web.id/api/h2h/transaction/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            target: currentTx.target,
-            product_code: currentTx.product.code,
-            reff_id: currentTx.reff_id,
-            api_key: API_KEY
-          })
-        });
-        document.getElementById("batalBtn").style.display = 'none';
-      }
-    }
-  </script>
+    setTimeout(() => {
+      document.getElementById("qrisModal").style.display = "none";
+    }, 3000);
+  }
+}
+
+async function cancelDeposit() {
+  clearInterval(pollingInterval);
+  await fetch(`${API_BASE}/deposit/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: currentDepositId, api_key: API_KEY })
+  });
+  document.getElementById("qrisModal").style.display = "none";
+  alert("Pesanan dibatalkan");
+}
+
+(async () => {
+  const allProducts = await fetchProducts();
+  const grouped = groupByCategoryAndProvider(allProducts);
+  window.groupedProducts = grouped;
+  renderCategoryTabs(Object.keys(grouped));
+  showCategory(Object.keys(grouped)[0]);
+})();
+</script>
 </body>
 </html>
