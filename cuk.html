@@ -6,11 +6,10 @@
   <title>Vinzz PPOB</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
-    :root { --primary: #2962ff; --secondary: #448aff; }
+    :root {
+      --primary: #2962ff;
+    }
     .navbar { background: var(--primary); }
-    .card:hover { transform: translateY(-5px); transition: 0.3s; }
-    .category-btn.active { background: var(--primary)!important; color: white!important; }
-    .product-img { height: 100px; object-fit: contain; }
     .loader {
       border: 4px solid #f3f3f3;
       border-top: 4px solid var(--primary);
@@ -26,52 +25,66 @@
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container">
-      <a class="navbar-brand" href="#">VINZZ PPOB</a>
-      <div class="d-flex align-items-center">
-        <div id="balance" class="text-white me-3">Saldo: Rp0</div>
-        <button class="btn btn-light me-2">Login</button>
-        <button class="btn btn-outline-light">Register</button>
-      </div>
-    </div>
+  <nav class="navbar navbar-dark px-3">
+    <span class="navbar-brand">VINZZ PPOB</span>
+    <div class="text-white" id="balance">Saldo: Rp0</div>
   </nav>
 
-  <div class="container my-5">
-    <div class="d-flex flex-wrap gap-2 mb-4" id="category-tabs">
-      <button class="btn btn-outline-primary category-btn active" data-category="all">Semua</button>
-      <button class="btn btn-outline-primary category-btn" data-category="Pulsa">Pulsa</button>
-      <button class="btn btn-outline-primary category-btn" data-category="Games">Games</button>
-      <button class="btn btn-outline-primary category-btn" data-category="PLN">PLN</button>
-    </div>
+  <div class="container my-4">
+    <button class="btn btn-success mb-3" onclick="openDeposit()">Deposit QRIS</button>
 
     <div id="loading" class="text-center d-none">
       <div class="loader"></div>
-      <p class="mt-2">Memuat produk...</p>
+      <p>Memuat produk...</p>
     </div>
 
-    <div class="row g-4" id="products-container"></div>
+    <div class="row" id="products-container"></div>
+  </div>
 
-    <div class="modal fade" id="transactionModal">
-      <div class="modal-dialog">
-        <div class="modal-content">
+  <!-- Modal Transaksi -->
+  <div class="modal fade" id="modalTransaksi" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form onsubmit="submitTransaksi(event)">
           <div class="modal-header">
             <h5 class="modal-title">Beli Produk</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <form id="transactionForm" onsubmit="handleTransaction(event)">
-              <div class="mb-3">
-                <label class="form-label">Nomor Tujuan/User ID</label>
-                <input type="text" class="form-control" name="target" required />
-              </div>
-              <input type="hidden" name="product_code" />
-              <button type="submit" class="btn btn-primary w-100">
-                <span class="submit-text">Beli Sekarang</span>
-                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
-              </button>
-            </form>
+            <input type="hidden" id="productCode" />
+            <div class="mb-3">
+              <label>User ID / No Tujuan</label>
+              <input type="text" class="form-control" id="target" required />
+            </div>
           </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" type="submit">Beli Sekarang</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Deposit -->
+  <div class="modal fade" id="modalDeposit" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form onsubmit="submitDeposit(event)">
+          <div class="modal-header">
+            <h5 class="modal-title">Deposit QRIS</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="number" id="depositNominal" class="form-control" placeholder="Masukkan nominal" required />
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-success" type="submit">Buat QRIS</button>
+          </div>
+        </form>
+        <div id="qrisContainer" class="text-center p-3 d-none">
+          <img id="qrisImage" src="" style="max-width: 100%;"/>
+          <p class="mt-2">Scan QR untuk membayar</p>
+          <button class="btn btn-danger" onclick="cancelDeposit()">Batalkan</button>
         </div>
       </div>
     </div>
@@ -79,114 +92,150 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const API_KEY = 'sk-rj6hylkrbx3qio'; // Ganti dengan API key kamu
+    const API_KEY = "sk-rj6hylkrbx3qio";
+    let currentDepositId = "";
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      await loadProducts();
-      setupCategoryFilters();
-    });
-
-    async function loadProducts(category = 'all') {
+    async function loadProducts() {
       try {
-        showLoading(true);
-        const res = await fetch('https://forestapi.web.id/api/h2h/price-list/all', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        toggleLoading(true);
+        const res = await fetch("https://forestapi.web.id/api/h2h/price-list/all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             api_key: API_KEY,
             filter_status: "true",
             profit_percent: "1"
           })
         });
-
-        const { data } = await res.json();
-        const filtered = category === 'all' ? data : data.filter(p => p.category === category);
-        renderProducts(filtered);
+        const data = await res.json();
+        if (data.status === "success") {
+          renderProducts(data.data);
+        } else {
+          alert("Gagal memuat produk");
+        }
       } catch (err) {
-        alert('Gagal memuat produk: ' + err.message);
+        alert("Gagal memuat produk: " + err.message);
       } finally {
-        showLoading(false);
+        toggleLoading(false);
       }
     }
 
-    function renderProducts(products) {
-      const container = document.getElementById('products-container');
-      container.innerHTML = '';
-      products.forEach(p => {
-        container.innerHTML += `
-          <div class="col-md-4 col-lg-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <h6 class="card-title">${p.name}</h6>
-                <div class="text-muted small">${p.provider}</div>
-                <div class="text-success fw-bold mt-2">${p.formatted_price}</div>
-                ${p.note ? `<div class="text-info small mt-2">${p.note}</div>` : ''}
-                <button onclick="openTransactionModal('${p.code}')" class="btn btn-primary w-100 mt-3">Beli</button>
-              </div>
+    function renderProducts(list) {
+      const container = document.getElementById("products-container");
+      container.innerHTML = "";
+      list.forEach(p => {
+        const col = document.createElement("div");
+        col.className = "col-md-4 mb-3";
+        col.innerHTML = `
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">${p.name}</h5>
+              <p>${p.provider}</p>
+              <p class="text-success">${p.formatted_price}</p>
+              <button class="btn btn-primary" onclick="openTransaksi('${p.code}')">Beli</button>
             </div>
           </div>
         `;
+        container.appendChild(col);
       });
     }
 
-    function openTransactionModal(productCode) {
-      const modal = new bootstrap.Modal('#transactionModal');
-      document.querySelector('#transactionForm input[name="product_code"]').value = productCode;
-      modal.show();
+    function toggleLoading(show) {
+      document.getElementById("loading").classList.toggle("d-none", !show);
+      document.getElementById("products-container").classList.toggle("d-none", show);
     }
 
-    async function handleTransaction(e) {
+    function openTransaksi(code) {
+      document.getElementById("productCode").value = code;
+      document.getElementById("target").value = "";
+      new bootstrap.Modal(document.getElementById("modalTransaksi")).show();
+    }
+
+    async function submitTransaksi(e) {
       e.preventDefault();
-      const form = e.target;
-      const btn = form.querySelector('button[type="submit"]');
-      const data = new FormData(form);
-
+      const code = document.getElementById("productCode").value;
+      const target = document.getElementById("target").value;
       try {
-        btn.disabled = true;
-        btn.querySelector('.submit-text').classList.add('d-none');
-        btn.querySelector('.spinner-border').classList.remove('d-none');
-
-        const res = await fetch('https://forestapi.web.id/api/h2h/transaction/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("https://forestapi.web.id/api/h2h/transaction/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             api_key: API_KEY,
-            product_code: data.get('product_code'),
-            target: data.get('target'),
-            reff_id: 'vinzz-' + Date.now()
+            product_code: code,
+            target: target,
+            reff_id: "trx-" + Date.now()
           })
         });
-
         const result = await res.json();
-        if (result.status === 'success') {
-          alert(`Transaksi Berhasil!\nSN: ${result.data.serial_number}`);
-          bootstrap.Modal.getInstance(document.getElementById('transactionModal')).hide();
+        if (result.status === "success") {
+          alert("Transaksi Berhasil!\nSN: " + result.data.serial_number);
+          bootstrap.Modal.getInstance(document.getElementById("modalTransaksi")).hide();
         } else {
-          throw new Error(result.message || 'Transaksi gagal');
+          alert(result.message);
         }
       } catch (err) {
-        alert('Error: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.querySelector('.submit-text').classList.remove('d-none');
-        btn.querySelector('.spinner-border').classList.add('d-none');
+        alert("Error: " + err.message);
       }
     }
 
-    function setupCategoryFilters() {
-      document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          loadProducts(btn.dataset.category);
-        });
-      });
+    function openDeposit() {
+      document.getElementById("depositNominal").value = "";
+      document.getElementById("qrisContainer").classList.add("d-none");
+      new bootstrap.Modal(document.getElementById("modalDeposit")).show();
     }
 
-    function showLoading(show) {
-      document.getElementById('loading').classList.toggle('d-none', !show);
-      document.getElementById('products-container').classList.toggle('d-none', show);
+    async function submitDeposit(e) {
+      e.preventDefault();
+      const nominal = document.getElementById("depositNominal").value;
+      try {
+        const res = await fetch("https://forestapi.web.id/api/h2h/deposit/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: API_KEY,
+            nominal: parseInt(nominal),
+            method: "QRISFAST",
+            fee_by_customer: "false",
+            reff_id: "deposit-" + Date.now()
+          })
+        });
+        const result = await res.json();
+        if (result.status === "success") {
+          document.getElementById("qrisImage").src = result.data.qr_image_url;
+          document.getElementById("qrisContainer").classList.remove("d-none");
+          currentDepositId = result.data.id;
+        } else {
+          alert(result.message);
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
     }
+
+    async function cancelDeposit() {
+      if (!currentDepositId) return;
+      try {
+        const res = await fetch("https://forestapi.web.id/api/h2h/deposit/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: API_KEY,
+            id: currentDepositId
+          })
+        });
+        const result = await res.json();
+        if (result.status === "success") {
+          alert("Deposit dibatalkan");
+          document.getElementById("qrisContainer").classList.add("d-none");
+        } else {
+          alert(result.message);
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    loadProducts();
   </script>
 </body>
 </html>
