@@ -3,247 +3,237 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vinzz PPOB</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <title>VINZZ PPOB</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background: #f5f5f5; }
-    .navbar { background: #2962ff; }
-    .category-btn.active { background: #2962ff !important; color: white !important; }
-    .product-img { height: 100px; object-fit: contain; }
-    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2962ff; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
-    .fade-in { animation: fadeIn 0.5s ease-in-out; }
-    @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
-    .success-checkmark {
-      width: 80px; height: 80px; margin: 20px auto;
-      border-radius: 50%; background: #4CAF50; display: flex; align-items: center; justify-content: center;
+    :root {
+      --primary: #2962ff;
     }
-    .success-checkmark::before {
-      content: '✓'; font-size: 40px; color: white;
+    body { padding-bottom: 100px; }
+    .navbar { background: var(--primary); }
+    .category-btn.active, .subcategory-btn.active {
+      background-color: var(--primary)!important; color: white!important;
+    }
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      animation: spin 1s linear infinite;
+      margin: auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .toast-container {
+      position: fixed; bottom: 1rem; right: 1rem; z-index: 1055;
     }
   </style>
 </head>
 <body>
+  <nav class="navbar navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#">VINZZ PPOB</a>
+    </div>
+  </nav>
 
-<nav class="navbar navbar-dark px-3">
-  <a class="navbar-brand" href="#">VINZZ PPOB</a>
-</nav>
+  <div class="container my-4">
+    <div id="category-tabs" class="mb-3 d-flex flex-wrap gap-2"></div>
+    <div id="subcategory-tabs" class="mb-4 d-flex flex-wrap gap-2"></div>
+    
+    <div id="loading" class="text-center d-none">
+      <div class="loader"></div>
+      <p class="mt-2">Memuat produk...</p>
+    </div>
 
-<div class="container my-4">
-  <!-- Category Tabs -->
-  <div id="category-tabs" class="d-flex flex-wrap gap-2 mb-3"></div>
-  <!-- Provider Tabs -->
-  <div id="provider-tabs" class="d-flex flex-wrap gap-2 mb-4"></div>
-
-  <!-- Loading -->
-  <div id="loading" class="text-center d-none">
-    <div class="loader"></div>
-    <p>Memuat produk...</p>
+    <div class="row g-3" id="products-container"></div>
   </div>
 
-  <!-- Product Grid -->
-  <div class="row g-3" id="product-list"></div>
-</div>
-
-<!-- QRIS Modal -->
-<div class="modal fade" id="qrisModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content text-center">
-      <div class="modal-header">
-        <h5 class="modal-title">Pembayaran QRIS</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div id="qris-box">
-          <img id="qris-image" src="" alt="QRIS" class="img-fluid"/>
-          <p class="text-muted mt-2">Status: <span id="qris-status">Pending</span></p>
-          <button id="cancelDepositBtn" class="btn btn-danger mt-2">Batalkan</button>
+  <!-- Modal QRIS -->
+  <div class="modal fade" id="qrisModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content text-center">
+        <div class="modal-header">
+          <h5 class="modal-title">Bayar dengan QRIS</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div id="success-box" class="d-none fade-in">
-          <div class="success-checkmark"></div>
-          <h5>Pembayaran Berhasil!</h5>
+        <div class="modal-body">
+          <p><strong>Total:</strong> <span id="qris-total">Rp0</span></p>
+          <img id="qris-img" src="" alt="QRIS" class="img-fluid mb-3" style="max-height: 250px;">
+          <div id="qris-status" class="fw-bold text-warning">Menunggu Pembayaran...</div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-const API_KEY = 'sk-rj6hylkrbx3qio';
-let fullData = [], selectedCategory = '', selectedProvider = '';
-let currentDepositId = '', checkInterval = null;
-
-async function fetchProducts() {
-  try {
-    showLoading(true);
-    const res = await fetch('https://forestapi.web.id/api/h2h/price-list/all', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ api_key: API_KEY, profit_percent: "1", filter_status: "true" })
-    });
-    const json = await res.json();
-    if (json.status === 'success') {
-      fullData = json.data;
-      renderCategories();
-    }
-  } catch (err) {
-    alert('Gagal memuat produk: ' + err.message);
-  } finally {
-    showLoading(false);
-  }
-}
-
-function renderCategories() {
-  const categories = [...new Set(fullData.map(p => p.category))];
-  const catTabs = document.getElementById('category-tabs');
-  catTabs.innerHTML = '';
-  categories.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-outline-primary category-btn';
-    btn.innerText = cat;
-    btn.onclick = () => {
-      selectedCategory = cat;
-      selectedProvider = '';
-      renderProviders(cat);
-      renderProducts();
-      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    };
-    catTabs.appendChild(btn);
-  });
-  // Auto-pilih pertama
-  selectedCategory = categories[0];
-  catTabs.querySelector('button').classList.add('active');
-  renderProviders(selectedCategory);
-  renderProducts();
-}
-
-function renderProviders(category) {
-  const providers = [...new Set(fullData.filter(p => p.category === category).map(p => p.provider))];
-  const provTabs = document.getElementById('provider-tabs');
-  provTabs.innerHTML = '';
-  providers.forEach(prov => {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-outline-secondary provider-btn';
-    btn.innerText = prov;
-    btn.onclick = () => {
-      selectedProvider = prov;
-      renderProducts();
-      document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    };
-    provTabs.appendChild(btn);
-  });
-  // Auto-pilih pertama provider
-  selectedProvider = providers[0];
-  provTabs.querySelector('button').classList.add('active');
-}
-
-function renderProducts() {
-  const list = document.getElementById('product-list');
-  list.innerHTML = '';
-  const filtered = fullData.filter(p => p.category === selectedCategory && p.provider === selectedProvider);
-  filtered.forEach(p => {
-    const col = document.createElement('div');
-    col.className = 'col-md-3';
-    col.innerHTML = `
-      <div class="card h-100">
-        <div class="card-body">
-          <h6 class="card-title">${p.name}</h6>
-          <p class="text-muted small">${p.provider}</p>
-          <p class="fw-bold text-success">${p.formatted_price}</p>
-          ${p.note ? `<p class="small text-info">${p.note}</p>` : ''}
-          <input type="text" class="form-control mb-2" placeholder="ID/Nomor" id="input-${p.code}"/>
-          <button class="btn btn-primary w-100" onclick="startTransaction('${p.code}', '${p.price}', document.getElementById('input-${p.code}').value)">Beli Sekarang</button>
-        </div>
+  <!-- Toast Notification -->
+  <div class="toast-container">
+    <div id="toastSuccess" class="toast align-items-center text-white bg-success" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">Pembayaran Berhasil!</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
-    `;
-    list.appendChild(col);
-  });
-}
+    </div>
+  </div>
 
-async function startTransaction(product_code, price, target) {
-  if (!target) return alert("Masukkan nomor/ID tujuan!");
-  try {
-    const reff = 'trx-' + Date.now();
-    const depositRes = await fetch('https://forestapi.web.id/api/h2h/deposit/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: API_KEY,
-        method: 'QRISFAST',
-        nominal: price,
-        reff_id: reff,
-        fee_by_customer: false
-      })
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const API_KEY = 'sk-rj6hylkrbx3qio';
+    let productsData = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadProducts();
     });
-    const depositJson = await depositRes.json();
-    if (depositJson.status !== 'success') throw new Error(depositJson.message);
-    const qrUrl = depositJson.data.qr_image_url;
-    currentDepositId = depositJson.data.id;
-    document.getElementById('qris-image').src = qrUrl;
-    document.getElementById('qris-status').innerText = 'Pending';
-    document.getElementById('qris-box').classList.remove('d-none');
-    document.getElementById('success-box').classList.add('d-none');
-    new bootstrap.Modal('#qrisModal').show();
 
-    // Mulai polling
-    if (checkInterval) clearInterval(checkInterval);
-    checkInterval = setInterval(() => checkStatus(product_code, target, reff), 3000);
-  } catch (err) {
-    alert("Gagal: " + err.message);
-  }
-}
-
-async function checkStatus(product_code, target, reff) {
-  const res = await fetch('https://forestapi.web.id/api/h2h/deposit/cancel', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ api_key: API_KEY, id: currentDepositId })
-  });
-  const json = await res.json();
-  if (json.data.status === 'success') {
-    clearInterval(checkInterval);
-    document.getElementById('qris-box').classList.add('d-none');
-    document.getElementById('success-box').classList.remove('d-none');
-
-    // Kirim transaksi
-    const tx = await fetch('https://forestapi.web.id/api/h2h/transaction/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: API_KEY,
-        product_code,
-        target,
-        reff_id: 'trx-' + Date.now()
-      })
-    });
-    const txJson = await tx.json();
-    if (txJson.status === 'success') {
-      setTimeout(() => location.reload(), 3000);
-    } else {
-      alert("Transaksi gagal: " + txJson.message);
+    async function loadProducts() {
+      toggleLoading(true);
+      try {
+        const res = await fetch('https://forestapi.web.id/api/h2h/price-list/all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: API_KEY, filter_status: "true", profit_percent: "1" })
+        });
+        const { data } = await res.json();
+        productsData = data;
+        renderCategories();
+      } catch (e) {
+        alert("Gagal memuat produk: " + e.message);
+      } finally {
+        toggleLoading(false);
+      }
     }
-  }
-}
 
-document.getElementById('cancelDepositBtn').onclick = async () => {
-  if (!currentDepositId) return;
-  await fetch('https://forestapi.web.id/api/h2h/deposit/cancel', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ api_key: API_KEY, id: currentDepositId })
-  });
-  location.reload();
-};
+    function renderCategories() {
+      const categories = [...new Set(productsData.map(p => p.category))];
+      const container = document.getElementById('category-tabs');
+      container.innerHTML = '';
+      categories.forEach(category => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline-primary category-btn';
+        btn.innerText = category;
+        btn.onclick = () => {
+          document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderSubcategories(category);
+        };
+        container.appendChild(btn);
+      });
+      container.firstChild?.click();
+    }
 
-function showLoading(show) {
-  document.getElementById('loading').classList.toggle('d-none', !show);
-  document.getElementById('product-list').classList.toggle('d-none', show);
-}
+    function renderSubcategories(category) {
+      const subcats = [...new Set(productsData.filter(p => p.category === category).map(p => p.provider))];
+      const container = document.getElementById('subcategory-tabs');
+      container.innerHTML = '';
+      subcats.forEach(provider => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline-secondary subcategory-btn';
+        btn.innerText = provider;
+        btn.onclick = () => {
+          document.querySelectorAll('.subcategory-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderProducts(category, provider);
+        };
+        container.appendChild(btn);
+      });
+      container.firstChild?.click();
+    }
 
-fetchProducts();
-</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    function renderProducts(category, provider) {
+      const container = document.getElementById('products-container');
+      container.innerHTML = '';
+      const filtered = productsData.filter(p => p.category === category && p.provider === provider);
+      filtered.forEach(product => {
+        const card = document.createElement('div');
+        card.className = 'col-md-4';
+        card.innerHTML = `
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title">${product.name}</h6>
+              <div class="text-muted small">${product.provider}</div>
+              <div class="text-success fw-bold">${product.formatted_price}</div>
+              ${product.note ? `<div class="text-info small mt-1">${product.note}</div>` : ''}
+              <button class="btn btn-primary mt-3 w-100" onclick='buyNow(${JSON.stringify(product)})'>Beli Sekarang</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function buyNow(product) {
+      let target = '';
+      if (product.provider.toLowerCase().includes("mobile legends")) {
+        const id = prompt("Masukkan User ID:");
+        const zone = prompt("Masukkan Zone ID:");
+        if (!id || !zone) return alert("ID tidak lengkap");
+        target = `${id}|${zone}`;
+      } else {
+        target = prompt("Masukkan Nomor Tujuan / User ID:");
+        if (!target) return;
+      }
+
+      const reff = "trx-" + Date.now();
+      const nominal = product.price;
+
+      try {
+        const depositRes = await fetch('https://forestapi.web.id/api/h2h/deposit/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: API_KEY,
+            nominal, method: "QRISFAST", reff_id: reff
+          })
+        });
+        const { data } = await depositRes.json();
+        showQRIS(data.qr_image_url, product, target, data.id, nominal);
+      } catch (err) {
+        alert("Gagal membuat deposit: " + err.message);
+      }
+    }
+
+    function showQRIS(qrUrl, product, target, depositId, nominal) {
+      document.getElementById('qris-img').src = qrUrl;
+      document.getElementById('qris-total').innerText = `Rp ${nominal.toLocaleString()}`;
+      document.getElementById('qris-status').innerText = "Menunggu Pembayaran...";
+      new bootstrap.Modal('#qrisModal').show();
+
+      const interval = setInterval(async () => {
+        const res = await fetch('https://forestapi.web.id/api/h2h/deposit/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: API_KEY, id: depositId })
+        });
+        const result = await res.json();
+        if (result.data.status === 'success') {
+          clearInterval(interval);
+          document.getElementById('qris-status').innerText = "Pembayaran Berhasil!";
+          document.getElementById('qris-status').classList.replace("text-warning", "text-success");
+
+          const trans = await fetch('https://forestapi.web.id/api/h2h/transaction/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              api_key: API_KEY,
+              target, product_code: product.code, reff_id: 'vinzz-' + Date.now()
+            })
+          });
+          const txRes = await trans.json();
+          if (txRes.status === 'success') showSuccessToast();
+        }
+      }, 3000);
+    }
+
+    function showSuccessToast() {
+      const toast = new bootstrap.Toast(document.getElementById('toastSuccess'));
+      toast.show();
+    }
+
+    function toggleLoading(show) {
+      document.getElementById('loading').classList.toggle('d-none', !show);
+      document.getElementById('products-container').classList.toggle('d-none', show);
+    }
+  </script>
 </body>
 </html>
