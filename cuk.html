@@ -3,334 +3,304 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Katalog Produk ForestAPI</title>
+  <title>Katalog Produk Digital</title>
   <style>
     body {
+      font-family: 'Segoe UI', sans-serif;
       margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: #f8f9fa;
-      color: #212529;
+      padding: 0;
+      background: #f0f2f5;
     }
     header {
-      background: #673ab7;
-      padding: 1rem;
+      background: #0d6efd;
       color: white;
+      padding: 1rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .container {
+      padding: 1rem;
+    }
+    .category-header {
       display: flex;
       flex-wrap: wrap;
-      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
     }
-    header button, .sub-header button {
-      background: white;
-      color: #673ab7;
-      margin: 0.25rem;
-      border: none;
+    .category-button {
       padding: 0.5rem 1rem;
+      background: #0d6efd;
+      color: white;
+      border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
-      transition: 0.3s;
     }
-    header button.active,
-    .sub-header button.active {
-      background: #311b92;
-      color: white;
-    }
-    .sub-header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+    .subcategory-container {
       margin: 1rem 0;
     }
-    .products {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
-      opacity: 0;
-      animation: fadeIn 0.5s ease forwards;
+    .subcategory-button {
+      background: #ffc107;
+      color: #000;
+      padding: 0.3rem 0.8rem;
+      border: none;
+      border-radius: 6px;
+      margin: 0.2rem;
+      cursor: pointer;
     }
-    .product {
+    .product-card {
       background: white;
       padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      animation: fadeIn 0.4s ease-in;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
     }
-    .product h4 {
-      margin: 0 0 0.5rem;
+    .product-card h4 {
+      margin: 0.2rem 0;
     }
-    .product input {
-      margin: 0.5rem 0;
+    .input-target {
+      margin-top: 0.5rem;
+    }
+    .input-target input {
       padding: 0.5rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      width: 100%;
+      margin-top: 0.3rem;
     }
-    .product button {
-      margin-top: auto;
-      background: #ff4081;
+    .btn-beli {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #198754;
       color: white;
       border: none;
-      padding: 0.5rem;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
     }
     #qris-popup {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.5);
       display: none;
-      align-items: center;
       justify-content: center;
+      align-items: center;
+      z-index: 100;
     }
-    #qris-content {
+    #qris-box {
       background: white;
-      padding: 1rem;
+      padding: 2rem;
       border-radius: 12px;
+      max-width: 90%;
+      width: 400px;
       text-align: center;
-      max-width: 90vw;
+      position: relative;
     }
-    #status {
-      margin-top: 1rem;
-      font-weight: bold;
-      color: #ff9800;
+    #qris-box img {
+      width: 200px;
+      margin: 1rem 0;
     }
     .notif {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #4caf50;
-      color: white;
-      padding: 1rem;
-      border-radius: 8px;
-      display: none;
-      animation: slideDown 0.5s ease forwards;
-      z-index: 999;
+      padding: 0.5rem;
+      border-radius: 6px;
+      margin-top: 0.5rem;
     }
-    #scroll-top {
+    .notif.pending { background: #fff3cd; color: #856404; }
+    .notif.success { background: #d4edda; color: #155724; }
+    .notif.failed { background: #f8d7da; color: #721c24; }
+    #scrollTopBtn {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: #673ab7;
+      padding: 0.6rem 1rem;
+      background: #dc3545;
       color: white;
-      padding: 1rem;
       border: none;
       border-radius: 50%;
-      font-size: 18px;
       cursor: pointer;
-      z-index: 999;
     }
-    .loader {
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #673ab7;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 2rem auto;
-      display: none;
+    .fee-info {
+      font-size: 0.85rem;
+      color: #555;
     }
-
-    @keyframes slideDown {
-      from { top: -50px; opacity: 0; }
-      to { top: 20px; opacity: 1; }
+    .close-btn, .cancel-btn {
+      margin-top: 1rem;
+      padding: 0.4rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 600px) {
-      #qris-content {
-        max-width: 95vw;
-        padding: 0.5rem;
-      }
-      #qris-content img {
-        max-width: 100%;
-      }
-      .product {
-        font-size: 0.9rem;
-      }
-      header, .sub-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-    }
+    .close-btn { background: #6c757d; color: white; }
+    .cancel-btn { background: #dc3545; color: white; }
   </style>
 </head>
 <body>
-  <header id="main-header"></header>
-  <div class="sub-header" id="sub-header"></div>
-  <div class="loader" id="loader"></div>
-  <div class="products" id="product-list">Memuat produk...</div>
+  <header>
+    <h2>Katalog Produk Digital</h2>
+  </header>
+  <div class="container">
+    <div id="categoryContainer" class="category-header"></div>
+    <div id="subcategoryContainer" class="subcategory-container"></div>
+    <div id="productList"></div>
+  </div>
 
   <div id="qris-popup">
-    <div id="qris-content">
+    <div id="qris-box">
       <h3>Scan QRIS untuk Bayar</h3>
-      <img id="qris-image" src="" alt="QRIS" style="max-width: 300px;">
-      <p id="status">Menunggu pembayaran...</p>
-      <button onclick="cancelTransaksi()">Batalkan</button>
+      <div class="fee-info" id="feeInfo"></div>
+      <img id="qrisImage" src="" alt="QRIS"/>
+      <div id="qrisStatus" class="notif pending">Menunggu pembayaran...</div>
+      <button class="cancel-btn" onclick="batalkanTransaksi()">Batalkan</button>
+      <button class="close-btn" onclick="closeQRIS()">Tutup</button>
     </div>
   </div>
 
-  <div class="notif" id="notif">Pembayaran berhasil!</div>
-  <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+  <button id="scrollTopBtn" onclick="scrollToTop()">↑</button>
 
   <script>
-    const API_KEY = "sk-rj6hylkrbx3qio";
-    let allData = [], selectedCategory = "", selectedProvider = "", polling, currentDepositId;
+    const apiKey = 'sk-rj6hylkrbx3qio';
+    let allProducts = [];
+    let currentTransaction = null;
+    let pollingInterval = null;
 
-    async function loadProducts() {
-      document.getElementById("loader").style.display = "block";
+    async function fetchProducts() {
       try {
-        const res = await fetch("https://forestapi.web.id/api/h2h/price-list/all", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ api_key: API_KEY, profit_percent: "1", filter_status: false })
+        const res = await fetch('https://forestapi.web.id/api/h2h/price-list/all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: apiKey, profit_percent: '1', filter_status: true })
         });
-        const json = await res.json();
-        allData = json.data;
+        const data = await res.json();
+        allProducts = data.data;
         renderCategories();
-      } catch {
-        document.getElementById("product-list").innerHTML = "Gagal memuat produk.";
-      } finally {
-        document.getElementById("loader").style.display = "none";
+      } catch (e) {
+        alert('Gagal memuat produk');
       }
     }
 
     function renderCategories() {
-      const header = document.getElementById("main-header");
-      header.innerHTML = "";
-      const categories = [...new Set(allData.map(p => p.category))];
-      categories.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.innerText = cat;
-        btn.classList.toggle("active", selectedCategory === cat);
-        btn.onclick = () => {
-          selectedCategory = cat;
-          selectedProvider = "";
-          renderCategories();
-          renderSubcategories();
-          document.getElementById("product-list").innerHTML = "";
-        };
-        header.appendChild(btn);
-      });
+      const categoryContainer = document.getElementById('categoryContainer');
+      const categories = [...new Set(allProducts.map(p => p.category))];
+      categoryContainer.innerHTML = categories.map(c => `<button class="category-button" onclick="selectCategory('${c}')">${c}</button>`).join('');
     }
 
-    function renderSubcategories() {
-      const sub = document.getElementById("sub-header");
-      const providers = [...new Set(allData.filter(p => p.category === selectedCategory).map(p => p.provider))];
-      sub.innerHTML = "";
-      providers.forEach(prov => {
-        const btn = document.createElement("button");
-        btn.innerText = prov;
-        btn.classList.toggle("active", selectedProvider === prov);
-        btn.onclick = () => {
-          selectedProvider = prov;
-          renderSubcategories();
-          renderProducts();
-        };
-        sub.appendChild(btn);
-      });
+    function selectCategory(category) {
+      const subcategoryContainer = document.getElementById('subcategoryContainer');
+      const providers = [...new Set(allProducts.filter(p => p.category === category).map(p => p.provider))];
+      subcategoryContainer.innerHTML = providers.map(p => `<button class="subcategory-button" onclick="renderProducts('${category}','${p}')">${p}</button>`).join('');
+      document.getElementById('productList').innerHTML = '';
     }
 
-    function renderProducts() {
-      const container = document.getElementById("product-list");
-      container.innerHTML = "";
-      container.style.opacity = "0";
-      setTimeout(() => {
-        const products = allData.filter(p => p.category === selectedCategory && p.provider === selectedProvider);
-        products.forEach(prod => {
-          const div = document.createElement("div");
-          div.className = "product";
-          div.innerHTML = `
-            <h4>${prod.name}</h4>
-            <p>${prod.formatted_price}</p>
-            <input type="text" placeholder="${prod.provider.includes('MOBILE LEGENDS') ? 'User ID' : 'Nomor Tujuan'}" id="target-${prod.code}" />
-            ${prod.provider.includes('MOBILE LEGENDS') ? `<input type="text" placeholder="Zone ID" id="zone-${prod.code}" />` : ""}
-            <button onclick="beliProduk('${prod.code}', '${prod.name}', ${prod.price}, '${prod.provider}')">Beli Sekarang</button>
-          `;
-          container.appendChild(div);
-        });
-        container.style.opacity = "1";
-      }, 100);
+    function renderProducts(category, provider) {
+      const list = document.getElementById('productList');
+      const filtered = allProducts.filter(p => p.category === category && p.provider === provider);
+      list.innerHTML = filtered.map(p => {
+        const isGame = p.category.toLowerCase().includes('game');
+        return `
+          <div class="product-card">
+            <h4>${p.name}</h4>
+            <div>${p.formatted_price} (${p.note || ''})</div>
+            <div class="input-target">
+              ${isGame ? `
+                <label>User ID</label><input id="uid-${p.code}" placeholder="123456789"/>
+                <label>Zone ID</label><input id="zone-${p.code}" placeholder="1234"/>`
+              : `<label>No Tujuan</label><input id="uid-${p.code}" placeholder="08xxxx"/>`}
+            </div>
+            <button class="btn-beli" onclick="beliProduk('${p.code}', '${p.name}', ${p.price}, '${p.category}', '${p.note}')">Beli Sekarang</button>
+          </div>`;
+      }).join('');
     }
 
-    async function beliProduk(code, name, price, provider) {
-      let target = document.getElementById(`target-${code}`).value.trim();
-      if (provider.includes("MOBILE LEGENDS")) {
-        const zone = document.getElementById(`zone-${code}`).value.trim();
-        if (!target || !zone) return alert("Lengkapi User ID dan Zone ID!");
-        target = `${target}|${zone}`;
-      } else if (!target) {
-        return alert("Masukkan nomor tujuan!");
+    async function beliProduk(code, name, price, category, note) {
+      const isGame = category.toLowerCase().includes('game');
+      const uid = document.getElementById(`uid-${code}`).value;
+      const zone = isGame ? document.getElementById(`zone-${code}`).value : '';
+      const target = isGame ? `${uid}|${zone}` : uid;
+
+      if (!uid || (isGame && !zone)) {
+        alert('Harap isi semua field terlebih dahulu.');
+        return;
       }
 
-      const reff = "trx-" + Date.now();
-      const deposit = await fetch("https://forestapi.web.id/api/h2h/deposit/create", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ nominal: price, method: "QRISFAST", reff_id: reff, fee_by_customer: false, api_key: API_KEY })
-      }).then(r => r.json());
-
-      if (deposit.status !== "success") return alert("Gagal membuat QRIS!");
-
-      document.getElementById("qris-popup").style.display = "flex";
-      document.getElementById("qris-image").src = deposit.data.qr_image_url;
-      document.getElementById("status").innerText = "Menunggu pembayaran...";
-      currentDepositId = deposit.data.id;
-
-      polling = setInterval(async () => {
-        const res = await fetch("https://forestapi.web.id/api/h2h/deposit/status", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ id: currentDepositId, api_key: API_KEY })
-        }).then(r => r.json());
-
-        if (res.data?.status === "success") {
-          clearInterval(polling);
-          document.getElementById("status").innerText = "Pembayaran berhasil!";
-          showNotif("Pembayaran berhasil!");
-          setTimeout(async () => {
-            await fetch("https://forestapi.web.id/api/h2h/transaction/create", {
-              method: "POST",
-              headers: {"Content-Type": "application/json"},
-              body: JSON.stringify({ product_code: code, target, reff_id: reff, api_key: API_KEY })
-            });
-            document.getElementById("qris-popup").style.display = "none";
-          }, 2000);
-        }
-      }, 3000);
+      const reff = 'trx-' + Date.now();
+      try {
+        const dep = await fetch('https://forestapi.web.id/api/h2h/deposit/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nominal: price,
+            method: 'QRISFAST',
+            fee_by_customer: false,
+            reff_id: reff,
+            api_key: apiKey
+          })
+        });
+        const depRes = await dep.json();
+        if (depRes.status !== 'success') throw new Error();
+        showQRIS(depRes.data.qr_image_url, price, depRes.data.id);
+        currentTransaction = { id: depRes.data.id, product_code: code, target, reff_id: reff };
+        pollingInterval = setInterval(checkStatus, 5000);
+      } catch {
+        alert('Gagal membuat QRIS');
+      }
     }
 
-    function cancelTransaksi() {
-      if (!currentDepositId) return;
-      fetch("https://forestapi.web.id/api/h2h/deposit/cancel", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ id: currentDepositId, api_key: API_KEY })
+    function showQRIS(url, price, id) {
+      document.getElementById('qrisImage').src = url;
+      document.getElementById('feeInfo').innerText = `Total: Rp ${price} - Fee admin 1.4% dibebankan pembeli`;
+      document.getElementById('qrisStatus').className = 'notif pending';
+      document.getElementById('qrisStatus').innerText = 'Menunggu pembayaran...';
+      document.getElementById('qris-popup').style.display = 'flex';
+    }
+
+    async function checkStatus() {
+      if (!currentTransaction) return;
+      const res = await fetch('https://forestapi.web.id/api/h2h/deposit/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentTransaction.id, api_key: apiKey })
       });
-      clearInterval(polling);
-      document.getElementById("qris-popup").style.display = "none";
+      const data = await res.json();
+      if (data.data.status === 'success') {
+        clearInterval(pollingInterval);
+        document.getElementById('qrisStatus').className = 'notif success';
+        document.getElementById('qrisStatus').innerText = 'Pembayaran berhasil! Memproses...';
+        await prosesTransaksi();
+      }
     }
 
-    function showNotif(msg) {
-      const notif = document.getElementById("notif");
-      notif.innerText = msg;
-      notif.style.display = "block";
-      setTimeout(() => notif.style.display = "none", 3000);
+    async function prosesTransaksi() {
+      await fetch('https://forestapi.web.id/api/h2h/transaction/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_code: currentTransaction.product_code,
+          target: currentTransaction.target,
+          reff_id: currentTransaction.reff_id,
+          api_key: apiKey
+        })
+      });
     }
 
-    loadProducts();
+    async function batalkanTransaksi() {
+      if (!currentTransaction) return;
+      await fetch('https://forestapi.web.id/api/h2h/deposit/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentTransaction.id, api_key: apiKey })
+      });
+      closeQRIS();
+    }
+
+    function closeQRIS() {
+      document.getElementById('qris-popup').style.display = 'none';
+      clearInterval(pollingInterval);
+      currentTransaction = null;
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    fetchProducts();
   </script>
 </body>
 </html>
