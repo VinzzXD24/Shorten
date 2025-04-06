@@ -2,26 +2,31 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VINZZ PPOB</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     :root {
       --bg: #fff;
       --text: #111;
-      --primary: #e91e63;
+      --primary: #007bff;
       --card: #f9f9f9;
+      --shadow: rgba(0,0,0,0.1);
     }
     [data-theme="dark"] {
       --bg: #121212;
       --text: #eee;
-      --primary: #ff4081;
+      --primary: #0d6efd;
       --card: #1e1e1e;
+      --shadow: rgba(255,255,255,0.05);
     }
+    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      font-family: sans-serif;
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
+      transition: background 0.3s, color 0.3s;
     }
     header {
       background: var(--primary);
@@ -30,287 +35,252 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
-    .toggle-switch {
-      display: flex;
-      align-items: center;
-    }
-    .toggle-switch input {
-      display: none;
-    }
+    header h1 { margin: 0; font-size: 1.5rem; }
+    .toggle-switch { display: flex; align-items: center; }
+    .toggle-switch input[type=checkbox] { display: none; }
     .toggle-switch label {
-      background: #ccc;
-      width: 50px;
-      height: 25px;
-      border-radius: 25px;
-      cursor: pointer;
       position: relative;
+      width: 50px; height: 24px;
+      background: #ccc;
+      border-radius: 12px;
+      cursor: pointer;
     }
     .toggle-switch label::after {
-      content: "";
-      width: 20px;
-      height: 20px;
-      background: #fff;
+      content: '';
       position: absolute;
-      top: 2.5px;
-      left: 3px;
+      width: 20px; height: 20px;
+      background: white;
       border-radius: 50%;
+      top: 2px; left: 2px;
       transition: 0.3s;
     }
-    .toggle-switch input:checked + label::after {
-      left: 27px;
-    }
-    .category-nav, .subcategory-nav {
-      display: flex;
+    .toggle-switch input:checked + label { background: var(--card); }
+    .toggle-switch input:checked + label::after { transform: translateX(26px); }
+    .container { padding: 1rem; max-width: 960px; margin: auto; }
+    .category-header {
+      display: flex; align-items: center;
       gap: 0.5rem;
-      flex-wrap: wrap;
-      padding: 1rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin: 1rem 0 0.5rem;
     }
+    .category-nav, .subcategory-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
     .category-nav button, .subcategory-nav button {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 1rem;
-      cursor: pointer;
-    }
-    .products {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
-    }
-    .product-card {
-      background: var(--card);
-      padding: 1rem;
-      border-radius: 1rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .product-card input {
-      width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.5rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .product-card button {
-      margin-top: 0.5rem;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 0.5rem;
-      width: 100%;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .popup {
-      position: fixed;
-      top: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card);
-      border: 2px solid var(--primary);
-      padding: 1rem;
-      z-index: 1000;
-      border-radius: 1rem;
-      display: none;
-    }
-    .popup.show {
-      display: block;
-    }
-    .popup img {
-      width: 200px;
-      height: 200px;
-      margin: 0 auto;
-      display: block;
-    }
-    .popup h3, .popup p {
-      text-align: center;
-    }
-    .popup .close-btn, .popup .cancel-btn {
-      margin-top: 1rem;
-      display: block;
-      width: 100%;
-      padding: 0.5rem;
-      border: none;
-      border-radius: 0.5rem;
-      background: var(--primary);
-      color: #fff;
-      cursor: pointer;
-    }
-    #scrollTop {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
       background: var(--primary);
       color: white;
       border: none;
-      padding: 0.8rem;
-      border-radius: 50%;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
       cursor: pointer;
+      display: flex; align-items: center; gap: 0.3rem;
+    }
+    .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; padding-bottom: 2rem; }
+    .product-card {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px var(--shadow);
+      display: flex; flex-direction: column;
+    }
+    .product-card h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .product-card .info { font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .product-card input { margin-bottom: 0.5rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
+    .product-card button {
+      margin-top: auto;
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .popup-overlay {
+      position: fixed; top:0; left:0; width:100vw; height:100vh;
+      background: rgba(0,0,0,0.6);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+    }
+    .popup {
+      background: var(--card);
+      padding: 2rem; border-radius: 12px;
+      max-width: 90%; width: 380px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 4px 12px var(--shadow);
+      animation: slideDown 0.4s ease-out;
+    }
+    @keyframes slideDown { from { opacity:0; transform: translateY(-20px);} to { opacity:1; transform: translateY(0);} }
+    .popup .close-btn { position: absolute; top: 8px; right: 12px; background: transparent; border:none; font-size:1.2rem; cursor: pointer; }
+    .popup img { width: 300px; max-width:100%; margin: 1rem 0; }
+    .popup h3 { margin-bottom: 0.5rem; }
+    .popup .detail { text-align:left; margin-bottom:1rem; }
+    .popup .status { font-weight:bold; color:orange; margin-bottom:1rem; }
+    .popup .status.success { color:green; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%{transform:scale(1);}50%{transform:scale(1.05);}100%{transform:scale(1);} }
+    .popup .cancel-btn, .popup .close-btn2 {
+      margin:0.3rem; padding:0.5rem 1rem; border:none; border-radius:6px; cursor:pointer;
+    }
+    .popup .cancel-btn { background:#dc3545; color:white; }
+    .popup .close-btn2 { background:#6c757d; color:white; }
+    #scrollTopBtn {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--primary); color:white;
+      border:none; padding:0.8rem; border-radius:50%; font-size:1.2rem;
+      cursor:pointer; display:none; z-index:1000;
     }
   </style>
 </head>
-<body>
+<body data-theme="light">
   <header>
     <h1>VINZZ PPOB</h1>
     <div class="toggle-switch">
-      <input type="checkbox" id="theme-toggle" />
-      <label for="theme-toggle"></label>
+      <input type="checkbox" id="themeToggle">
+      <label for="themeToggle"></label>
     </div>
   </header>
+  <div class="container">
+    <div class="category-header"><i class="fas fa-layer-group"></i> Jenis Layanan</div>
+    <div class="category-nav" id="categoryNav"></div>
 
-  <div class="category-nav" id="categoryNav"></div>
-  <div class="subcategory-nav" id="subcategoryNav"></div>
-  <div class="products" id="productList"></div>
+    <div class="category-header" id="subLabel"><i class="fas fa-list"></i> Pilih Provider</div>
+    <div class="subcategory-nav" id="subcategoryNav"></div>
 
-  <div class="popup" id="qrisPopup">
-    <h3>Scan QRIS</h3>
-    <img id="qrImage" src="" alt="QR Code"/>
-    <p id="paymentInfo">Menunggu pembayaran...</p>
-    <p id="feeInfo"></p>
-    <button class="cancel-btn" onclick="cancelDeposit()">Batalkan</button>
-    <button class="close-btn" onclick="closePopup()">Tutup</button>
+    <div class="products" id="productList"></div>
   </div>
 
-  <button id="scrollTop" onclick="scrollToTop()">↑</button>
+  <div class="popup-overlay" id="popupOverlay">
+    <div class="popup">
+      <button class="close-btn" onclick="closePopup()">×</button>
+      <h3>Scan QRIS untuk Bayar</h3>
+      <img id="qrImage" src="" alt="QRIS" />
+      <div class="detail" id="paymentDetail"></div>
+      <div class="status" id="paymentStatus">Menunggu pembayaran...</div>
+      <button class="cancel-btn" onclick="cancelDeposit()">Batalkan Pesanan</button>
+      <button class="close-btn2" onclick="closePopup()">Tutup</button>
+    </div>
+  </div>
+
+  <button id="scrollTopBtn" onclick="scrollToTop()">↑</button>
 
   <script>
-    const API_KEY = "sk-rj6hylkrbx3qio";
-    let allProducts = [];
-    let currentCategory = '';
-    let pollingInterval;
-    let currentDepositId = '';
+    const API_KEY = 'sk-rj6hylkrbx3qio';
+    let allProducts = [], currentDepositId = '', pollingInterval, feePercent = 1.8; // Fee admin tetap 1.8%
+
+    document.getElementById('themeToggle').addEventListener('change', e => {
+      document.body.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+    });
+    window.addEventListener('scroll', () => {
+      document.getElementById('scrollTopBtn').style.display = window.scrollY > 200 ? 'block' : 'none';
+    });
 
     async function fetchProducts() {
-      const res = await fetch("https://forestapi.web.id/api/h2h/price-list/all", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ api_key: API_KEY, profit_percent: "1", filter_status: "true" })
-      });
-      const data = await res.json();
-      allProducts = data.data || [];
-      renderCategories();
+      try {
+        const res = await fetch('https://forestapi.web.id/api/h2h/price-list/all', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ api_key:API_KEY, profit_percent:'1', filter_status:false })
+        });
+        const json = await res.json();
+        allProducts = json.data;
+        renderCategories();
+      } catch {
+        alert('Gagal memuat produk');
+      }
     }
 
     function renderCategories() {
-      const categoryNav = document.getElementById("categoryNav");
-      const categories = [...new Set(allProducts.map(p => p.category))];
-      categoryNav.innerHTML = '';
-      categories.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.textContent = cat;
-        btn.onclick = () => {
-          currentCategory = cat;
-          renderSubcategories(cat);
-        };
-        categoryNav.appendChild(btn);
+      const cats = [...new Set(allProducts.map(p=>p.category))];
+      const nav = document.getElementById('categoryNav'); nav.innerHTML = '';
+      cats.forEach(cat => {
+        const btn = document.createElement('button'); btn.innerHTML = `<i class="fas fa-layer-group"></i> ${cat}`;
+        btn.onclick = () => renderSubcategories(cat);
+        nav.appendChild(btn);
       });
     }
 
-    function renderSubcategories(category) {
-      const subcategoryNav = document.getElementById("subcategoryNav");
-      const subs = [...new Set(allProducts.filter(p => p.category === category).map(p => p.provider))];
-      subcategoryNav.innerHTML = '';
+    function renderSubcategories(cat) {
+      const subs = [...new Set(allProducts.filter(p=>p.category===cat).map(p=>p.provider))];
+      document.getElementById('subLabel').innerHTML = `<i class="fas fa-list"></i> ${cat==='Games'?'Pilih Game':'Pilih Provider'}`;
+      const nav = document.getElementById('subcategoryNav'); nav.innerHTML = '';
       subs.forEach(sub => {
-        const btn = document.createElement("button");
-        btn.textContent = sub;
-        btn.onclick = () => {
-          renderProducts(currentCategory, sub);
-        };
-        subcategoryNav.appendChild(btn);
+        const btn = document.createElement('button'); btn.innerHTML = `<i class="fas fa-caret-right"></i> ${sub}`;
+        btn.onclick = () => renderProducts(cat, sub);
+        nav.appendChild(btn);
       });
+      document.getElementById('productList').innerHTML = '';
     }
 
-    function renderProducts(category, provider) {
-      const productList = document.getElementById("productList");
-      const filtered = allProducts.filter(p => p.category === category && p.provider === provider);
-      productList.innerHTML = '';
-      filtered.forEach(p => {
-        const card = document.createElement("div");
-        card.className = "product-card";
+    function renderProducts(cat, sub) {
+      const list = document.getElementById('productList'); list.innerHTML = '';
+      allProducts.filter(p=>p.category===cat&&p.provider===sub).forEach(p=>{
+        const card = document.createElement('div'); card.className='product-card';
+        const isGame = cat==='Games';
         card.innerHTML = `
-          <h4>${p.name}</h4>
-          <p><b>${p.formatted_price}</b> (${p.type})</p>
-          <p>${p.note || ''}</p>
-          <input type="text" placeholder="${p.provider.includes('LEGENDS') ? 'User ID' : 'Nomor Tujuan'}" id="input-${p.code}" />
-          <input type="text" placeholder="${p.provider.includes('LEGENDS') ? 'Zone ID' : ''}" id="zone-${p.code}" ${p.provider.includes('LEGENDS') ? '' : 'style="display:none;"'} />
-          <button onclick="buyProduct('${p.code}', '${p.price}', '${p.provider}')">Beli Sekarang</button>
+          <h3>${p.name}</h3>
+          <div class="info">Harga: ${p.formatted_price}</div>
+          <div class="info">Tipe: ${p.type}</div>
+          ${p.note?`<div class="info">Note: ${p.note}</div>`:''}
+          <input type="text" placeholder="${isGame?'User ID':'Nomor Tujuan'}" id="uid-${p.code}" />
+          ${p.note&&p.note.includes('GABUNGKAN')?`<input type="text" placeholder="Zone ID" id="zone-${p.code}" />`:''}
+          <button onclick="buyNow('${p.code}',${p.price})">Beli Sekarang</button>
         `;
-        productList.appendChild(card);
+        list.appendChild(card);
       });
     }
 
-    async function buyProduct(code, price, provider) {
-      let target = document.getElementById(`input-${code}`).value.trim();
-      if (provider.includes('LEGENDS')) {
-        const zone = document.getElementById(`zone-${code}`).value.trim();
-        if (!target || !zone) return alert("Isi User ID dan Zone ID");
-        target = `${target}|${zone}`;
-      } else {
-        if (!target) return alert("Isi nomor tujuan");
-      }
-
-      const nominal = parseInt(price);
-      const reff = "trx-" + Date.now();
-
-      const res = await fetch("https://forestapi.web.id/api/h2h/deposit/create", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ nominal, method: "QRISFAST", reff_id: reff, api_key: API_KEY })
-      });
-      const data = await res.json();
-      if (data.status !== "success") return alert("Gagal membuat QRIS");
-
-      const qrImg = data.data.qr_image_url;
-      currentDepositId = data.data.id;
-
-      document.getElementById("qrImage").src = qrImg;
-      document.getElementById("paymentInfo").textContent = "Menunggu pembayaran...";
-      document.getElementById("feeInfo").textContent = `Total: Rp ${price}, Fee Admin: Rp ${data.data.fee}, Total Bayar: Rp ${price + data.data.fee}`;
-      document.getElementById("qrisPopup").classList.add("show");
-
-      if (pollingInterval) clearInterval(pollingInterval);
-      pollingInterval = setInterval(() => checkDepositStatus(data.data.id), 4000);
+    async function buyNow(code, price) {
+      const uid = document.getElementById(`uid-${code}`).value.trim();
+      const zoneEl = document.getElementById(`zone-${code}`);
+      const zone = zoneEl?zoneEl.value.trim():'';
+      if(!uid||(zoneEl&&!zone)) return alert('Isi field dengan benar');
+      const target = zone?`${uid}|${zone}`:uid;
+      const reff = 'trx'+Date.now();
+      const fee = Math.ceil(price * feePercent/100);
+      const total = price + fee;
+      try {
+        const res = await fetch('https://forestapi.web.id/api/h2h/deposit/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:API_KEY,method:'QRISFAST',nominal:total,reff_id:reff,fee_by_customer:false})});
+        const json=await res.json(); if(json.status!=='success') throw new Error();
+        currentDepositId=json.data.id;
+        showPopup(json.data.qr_image_url,price,fee,total);
+        if(pollingInterval) clearInterval(pollingInterval);
+        pollingInterval=setInterval(()=>checkStatus(code,target,reff),3000);
+      } catch{alert('Gagal membuat QRIS');}
     }
 
-    async function checkDepositStatus(id) {
-      const res = await fetch("https://forestapi.web.id/api/h2h/deposit/status", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ id, api_key: API_KEY })
-      });
-      const data = await res.json();
-      if (data.data.status === "success") {
+    function showPopup(qrUrl, price, fee, total) {
+      document.getElementById('qrImage').src = qrUrl;
+      document.getElementById('paymentDetail').innerHTML =
+        `Harga Produk: Rp${price.toLocaleString()}<br>
+        Fee Admin (1,4%): Rp${fee.toLocaleString()}<br>
+        <strong>Total Bayar: Rp${total.toLocaleString()}</strong>`;
+      const statusEl = document.getElementById('paymentStatus');
+      statusEl.className = 'status-pending';
+      statusEl.innerText = 'Menunggu pembayaran...';
+      document.getElementById('popupOverlay').style.display = 'flex';
+    }
+
+    async function checkStatus(code,target,reff){
+      const res=await fetch('https://forestapi.web.id/api/h2h/deposit/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:currentDepositId,api_key:API_KEY})});
+      const json=await res.json();
+      if(json.data.status==='success'){
         clearInterval(pollingInterval);
-        document.getElementById("paymentInfo").textContent = "Pembayaran Berhasil!";
+        const statusEl = document.getElementById('paymentStatus'); statusEl.className='status-success'; statusEl.innerText='Pembayaran berhasil!';
+        setTimeout(async()=>{await fetch('https://forestapi.web.id/api/h2h/transaction/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:API_KEY,product_code:code,target,reff_id:reff})});closePopup();},2000);
       }
     }
 
-    async function cancelDeposit() {
-      if (!currentDepositId) return;
-      await fetch("https://forestapi.web.id/api/h2h/deposit/cancel", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ id: currentDepositId, api_key: API_KEY })
-      });
-      clearInterval(pollingInterval);
-      closePopup();
+    async function cancelDeposit(){
+      if(!currentDepositId) return; await fetch('https://forestapi.web.id/api/h2h/deposit/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:currentDepositId,api_key:API_KEY})});
+      clearInterval(pollingInterval);closePopup();
     }
 
-    function closePopup() {
-      document.getElementById("qrisPopup").classList.remove("show");
-      currentDepositId = '';
-    }
-
-    function scrollToTop() {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    document.getElementById("theme-toggle").addEventListener("change", (e) => {
-      document.documentElement.setAttribute("data-theme", e.target.checked ? "dark" : "light");
-    });
-
+    function closePopup(){document.getElementById('popupOverlay').style.display='none';currentDepositId='';}
+    function scrollToTop(){window.scrollTo({top:0,behavior:'smooth'});}    
     fetchProducts();
   </script>
 </body>
