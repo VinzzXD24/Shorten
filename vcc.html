@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VCC Lookup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background: #3498db;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .result {
+      border-top: 1px solid #ccc;
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>VCC Lookup</h2>
+    <p>Masukkan BIN atau nomor kartu untuk melakukan lookup:</p>
+    <input type="text" id="cardNumber" placeholder="Contoh: 45717360">
+    <button onclick="lookupVCC()">Lookup</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    async function lookupVCC() {
+      const cardNumber = document.getElementById('cardNumber').value.trim();
+      if (!cardNumber) {
+        alert('Silakan masukkan nomor kartu atau BIN.');
+        return;
+      }
+      const url = 'https://lookup.binlist.net/' + cardNumber;
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'Accept-Version': '3'
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Terjadi kesalahan saat mengambil data.');
+        }
+        const data = await response.json();
+        displayResult(data);
+      } catch (error) {
+        document.getElementById('result').innerHTML = `<p style="color: red;">${error.message}</p>`;
+      }
+    }
+
+    function displayResult(data) {
+      let html = '<h3>Hasil Lookup</h3>';
+      html += '<ul>';
+      if (data.scheme) {
+        html += `<li><strong>Skema:</strong> ${data.scheme}</li>`;
+      }
+      if (data.type) {
+        html += `<li><strong>Jenis:</strong> ${data.type}</li>`;
+      }
+      if (data.brand) {
+        html += `<li><strong>Brand:</strong> ${data.brand}</li>`;
+      }
+      if (data.prepaid !== undefined) {
+        html += `<li><strong>Prepaid:</strong> ${data.prepaid ? 'Ya' : 'Tidak'}</li>`;
+      }
+      if (data.number) {
+        html += `<li><strong>Panjang Nomor:</strong> ${data.number.length}</li>`;
+        html += `<li><strong>Luhn Valid:</strong> ${data.number.luhn ? 'Ya' : 'Tidak'}</li>`;
+      }
+      if (data.country) {
+        html += `<li><strong>Negara:</strong> ${data.country.name} (${data.country.alpha2})</li>`;
+        html += `<li><strong>Mata Uang:</strong> ${data.country.currency}</li>`;
+      }
+      if (data.bank) {
+        html += `<li><strong>Bank:</strong> ${data.bank.name}</li>`;
+        html += `<li><strong>Website Bank:</strong> <a href="http://${data.bank.url}" target="_blank">${data.bank.url}</a></li>`;
+        html += `<li><strong>Telepon:</strong> ${data.bank.phone}</li>`;
+        html += `<li><strong>Kota:</strong> ${data.bank.city}</li>`;
+      }
+      html += '</ul>';
+      document.getElementById('result').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
