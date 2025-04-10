@@ -69,19 +69,24 @@
         alert('Silakan masukkan nomor kartu atau BIN.');
         return;
       }
-      const url = 'https://lookup.binlist.net/' + cardNumber;
+      
+      // Menggunakan proxy publik untuk menghindari masalah CORS
+      const proxyUrl = 'https://thingproxy.freeboard.io/fetch/';
+      const targetUrl = 'https://lookup.binlist.net/' + cardNumber;
+      
       try {
-        const response = await fetch(url, {
+        const response = await fetch(proxyUrl + targetUrl, {
           headers: {
             'Accept-Version': '3'
           }
         });
         if (!response.ok) {
-          throw new Error('Terjadi kesalahan saat mengambil data.');
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
         const data = await response.json();
         displayResult(data);
       } catch (error) {
+        console.error('Error:', error);
         document.getElementById('result').innerHTML = `<p style="color: red;">${error.message}</p>`;
       }
     }
@@ -98,7 +103,7 @@
       if (data.brand) {
         html += `<li><strong>Brand:</strong> ${data.brand}</li>`;
       }
-      if (data.prepaid !== undefined) {
+      if (typeof data.prepaid === 'boolean') {
         html += `<li><strong>Prepaid:</strong> ${data.prepaid ? 'Ya' : 'Tidak'}</li>`;
       }
       if (data.number) {
