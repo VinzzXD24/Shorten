@@ -70,8 +70,9 @@
         return;
       }
       
-      // Memanggil API proxy lokal yang dibuat di Vercel
-      const apiEndpoint = '/api/lookup?cardNumber=' + encodeURIComponent(cardNumber);
+      // Menentukan base URL secara eksplisit
+      const baseUrl = 'https://www.shorten.biz.id';
+      const apiEndpoint = baseUrl + '/api/lookup?cardNumber=' + encodeURIComponent(cardNumber);
       
       try {
         const response = await fetch(apiEndpoint);
