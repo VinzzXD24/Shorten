@@ -70,16 +70,11 @@
         return;
       }
       
-      // Menggunakan proxy publik untuk menghindari masalah CORS
-      const proxyUrl = 'https://thingproxy.freeboard.io/fetch/';
-      const targetUrl = 'https://lookup.binlist.net/' + cardNumber;
+      // Memanggil API proxy lokal yang dibuat di Vercel
+      const apiEndpoint = '/api/lookup?cardNumber=' + encodeURIComponent(cardNumber);
       
       try {
-        const response = await fetch(proxyUrl + targetUrl, {
-          headers: {
-            'Accept-Version': '3'
-          }
-        });
+        const response = await fetch(apiEndpoint);
         if (!response.ok) {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
